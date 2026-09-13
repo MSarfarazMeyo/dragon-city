@@ -7,6 +7,7 @@ import { LogOut } from "lucide-react";
 import { navForRole, type StaffRole } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notification-bell";
 import { cn } from "@/lib/utils";
 
 export function AppShell({
@@ -52,11 +53,12 @@ export function AppShell({
             );
           })}
         </nav>
-        <div className="p-2">
-          <Button variant="ghost" className="w-full justify-start" onClick={signOut}>
+        <div className="flex items-center gap-1 p-2">
+          <Button variant="ghost" className="flex-1 justify-start" onClick={signOut}>
             <LogOut className="size-4" />
             Log out
           </Button>
+          <NotificationBell />
         </div>
       </aside>
 
@@ -64,9 +66,12 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b p-4 md:hidden">
           <span className="text-lg font-semibold tracking-tight">Dragon City</span>
-          <Button variant="ghost" size="icon" onClick={signOut} aria-label="Log out">
-            <LogOut className="size-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Button variant="ghost" size="icon" onClick={signOut} aria-label="Log out">
+              <LogOut className="size-4" />
+            </Button>
+          </div>
         </header>
 
         <main className="mx-auto w-full max-w-[1536px] flex-1 p-4 pb-20 md:p-6 md:pb-6">

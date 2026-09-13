@@ -71,6 +71,9 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
+// /api/* is excluded: those routes authorize themselves (a user session
+// via the regular server client, or a shared secret for webhooks/cron
+// like /api/cron/notify) rather than being gated by page-level redirects.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
 };

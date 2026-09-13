@@ -276,6 +276,78 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_rules: {
+        Row: {
+          event: string
+          id: string
+          offset_days: number
+          template: string
+        }
+        Insert: {
+          event: string
+          id?: string
+          offset_days: number
+          template: string
+        }
+        Update: {
+          event?: string
+          id?: string
+          offset_days?: number
+          template?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          channel: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          related_ticket_id: string | null
+          sent_at: string
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          channel: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          related_ticket_id?: string | null
+          sent_at?: string
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          related_ticket_id?: string | null
+          sent_at?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_related_ticket_id_fkey"
+            columns: ["related_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -339,6 +411,77 @@ export type Database = {
             columns: ["merchant_id"]
             isOneToOne: false
             referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          department: string
+          description: string | null
+          id: string
+          merchant_id: string | null
+          resolved_at: string | null
+          status: string
+          type: string
+          unit_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          department: string
+          description?: string | null
+          id?: string
+          merchant_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          type: string
+          unit_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          description?: string | null
+          id?: string
+          merchant_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          type?: string
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]
