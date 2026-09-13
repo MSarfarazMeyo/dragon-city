@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // Refreshes the Supabase session on every request. Role-based route
 // gating (staff vs. merchant vs. unauthenticated) is added in Sprint 0
 // once the `profiles` table and its `role` column exist.
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
