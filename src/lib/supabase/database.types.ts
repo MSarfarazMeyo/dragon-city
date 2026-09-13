@@ -60,26 +60,142 @@ export type Database = {
         }
         Relationships: []
       }
+      leases: {
+        Row: {
+          billing_status: string
+          cooperation_contract_no: string | null
+          created_at: string
+          deposit: number | null
+          end_date: string | null
+          id: string
+          merchant_id: string
+          rent_amount: number | null
+          service_contract_no: string | null
+          service_fee: number | null
+          start_date: string
+          status: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_status?: string
+          cooperation_contract_no?: string | null
+          created_at?: string
+          deposit?: number | null
+          end_date?: string | null
+          id?: string
+          merchant_id: string
+          rent_amount?: number | null
+          service_contract_no?: string | null
+          service_fee?: number | null
+          start_date: string
+          status?: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_status?: string
+          cooperation_contract_no?: string | null
+          created_at?: string
+          deposit?: number | null
+          end_date?: string | null
+          id?: string
+          merchant_id?: string
+          rent_amount?: number | null
+          service_contract_no?: string | null
+          service_fee?: number | null
+          start_date?: string
+          status?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leases_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leases_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchants: {
+        Row: {
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          cr_number: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          cr_number?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          cr_number?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           full_name: string | null
           id: string
+          merchant_id: string | null
           role: string
         }
         Insert: {
           created_at?: string
           full_name?: string | null
           id: string
+          merchant_id?: string | null
           role: string
         }
         Update: {
           created_at?: string
           full_name?: string | null
           id?: string
+          merchant_id?: string | null
           role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       units: {
         Row: {
@@ -165,6 +281,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_merchant_id: { Args: never; Returns: string }
       current_role: { Args: never; Returns: string }
     }
     Enums: {
