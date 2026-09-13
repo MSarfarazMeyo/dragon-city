@@ -14,12 +14,22 @@ export default async function MapPage() {
 
   const { data: activeLeases } = await supabase
     .from("leases")
-    .select("unit_id, billing_status, end_date, merchants(name)")
+    .select("id, unit_id, billing_status, end_date, is_locked, merchants(name)")
     .eq("status", "active");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: overdueInvoices } = await supabase
+    .from("invoices")
+    .select("lease_id")
+    .eq("status", "pending")
+    .lt("due_date", today);
 
   const { data: merchants } = await supabase.from("merchants").select("id, name").order("name");
 
-  const leaseByUnit = new Map((activeLeases ?? []).map((l) => [l.unit_id, l]));
+  const overdueLeaseIds = new Set((overdueInvoices ?? []).map((i) => i.lease_id));
+  const leaseByUnit = new Map(
+    (activeLeases ?? []).map((l) => [l.unit_id, { ...l, is_overdue: overdueLeaseIds.has(l.id) }]),
+  );
 
   const mapZones: MapZone[] = (zones ?? [])
     .map((zone) => ({

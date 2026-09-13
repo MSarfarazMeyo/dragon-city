@@ -39,6 +39,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      documents: {
+        Row: {
+          created_at: string
+          file_path: string
+          id: string
+          merchant_id: string
+          name: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          id?: string
+          merchant_id: string
+          name: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          id?: string
+          merchant_id?: string
+          name?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       floors: {
         Row: {
           created_at: string
@@ -60,6 +95,79 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_line_items: {
+        Row: {
+          amount: number
+          id: string
+          invoice_id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          amount: number
+          id?: string
+          invoice_id: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          amount?: number
+          id?: string
+          invoice_id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          due_date: string
+          id: string
+          lease_id: string
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          id?: string
+          lease_id: string
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          id?: string
+          lease_id?: string
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leases: {
         Row: {
           billing_status: string
@@ -68,6 +176,7 @@ export type Database = {
           deposit: number | null
           end_date: string | null
           id: string
+          is_locked: boolean
           merchant_id: string
           rent_amount: number | null
           service_contract_no: string | null
@@ -84,6 +193,7 @@ export type Database = {
           deposit?: number | null
           end_date?: string | null
           id?: string
+          is_locked?: boolean
           merchant_id: string
           rent_amount?: number | null
           service_contract_no?: string | null
@@ -100,6 +210,7 @@ export type Database = {
           deposit?: number | null
           end_date?: string | null
           id?: string
+          is_locked?: boolean
           merchant_id?: string
           rent_amount?: number | null
           service_contract_no?: string | null
@@ -164,6 +275,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          id: string
+          invoice_id: string
+          method: string | null
+          paid_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          amount: number
+          id?: string
+          invoice_id: string
+          method?: string | null
+          paid_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          amount?: number
+          id?: string
+          invoice_id?: string
+          method?: string | null
+          paid_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

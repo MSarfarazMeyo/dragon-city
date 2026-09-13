@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Lock } from "lucide-react";
 import { AddShopDialog } from "@/components/map/add-shop-dialog";
 import { ShopDetailDialog, type ShopDetailUnit } from "@/components/map/shop-detail-dialog";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,8 @@ import { cn } from "@/lib/utils";
 type UnitLease = {
   billing_status: string;
   end_date: string | null;
+  is_locked: boolean;
+  is_overdue: boolean;
   merchants: { name: string } | null;
 };
 
@@ -26,7 +29,7 @@ export type MapZone = {
   units: MapUnit[];
 };
 
-type Status = "free" | "occupied" | "expiring" | "fit_out" | "on_hold";
+type Status = "free" | "occupied" | "expiring" | "fit_out" | "on_hold" | "overdue";
 
 const EXPIRING_WITHIN_DAYS = 30;
 
@@ -35,6 +38,7 @@ function statusOf(unit: MapUnit): Status {
   if (!lease) return "free";
   if (lease.billing_status === "fit_out") return "fit_out";
   if (lease.billing_status === "free_use") return "on_hold";
+  if (lease.is_overdue) return "overdue";
   if (lease.end_date) {
     const days = (new Date(lease.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     if (days >= 0 && days <= EXPIRING_WITHIN_DAYS) return "expiring";
@@ -48,6 +52,7 @@ const STATUS_STYLE: Record<Status, string> = {
   expiring: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
   fit_out: "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400",
   on_hold: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400",
+  overdue: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400",
 };
 
 const STATUS_LABEL: Record<Status, string> = {
@@ -56,6 +61,7 @@ const STATUS_LABEL: Record<Status, string> = {
   expiring: "Expiring",
   fit_out: "Fit-out",
   on_hold: "On hold",
+  overdue: "Overdue",
 };
 
 export function MapGrid({
@@ -72,7 +78,7 @@ export function MapGrid({
 
   const allUnits = useMemo(() => zones.flatMap((z) => z.units), [zones]);
   const counts = useMemo(() => {
-    const c: Record<Status, number> = { free: 0, occupied: 0, expiring: 0, fit_out: 0, on_hold: 0 };
+    const c: Record<Status, number> = { free: 0, occupied: 0, expiring: 0, fit_out: 0, on_hold: 0, overdue: 0 };
     for (const u of allUnits) c[statusOf(u)]++;
     return c;
   }, [allUnits]);
@@ -89,6 +95,7 @@ export function MapGrid({
           <Stat label="Total" value={allUnits.length} />
           <Stat label="Free" value={counts.free} tone="free" />
           <Stat label="Occupied" value={counts.occupied} tone="occupied" />
+          {counts.overdue > 0 && <Stat label="Overdue" value={counts.overdue} tone="overdue" />}
           {counts.expiring > 0 && <Stat label="Expiring" value={counts.expiring} tone="expiring" />}
           {counts.fit_out > 0 && <Stat label="Fit-out" value={counts.fit_out} tone="fit_out" />}
           {counts.on_hold > 0 && <Stat label="On hold" value={counts.on_hold} tone="on_hold" />}
@@ -145,11 +152,14 @@ export function MapGrid({
                           onClick={() => openUnit(unit)}
                           title={unit.lease?.merchants?.name ?? unit.category ?? undefined}
                           className={cn(
-                            "flex size-12 items-center justify-center rounded-md border text-[11px] font-medium transition-transform hover:scale-105",
+                            "relative flex size-12 items-center justify-center rounded-md border text-[11px] font-medium transition-transform hover:scale-105",
                             STATUS_STYLE[status],
                           )}
                         >
                           {unit.code}
+                          {unit.lease?.is_locked && (
+                            <Lock className="absolute -top-1 -right-1 size-3.5 rounded-full bg-background p-0.5 text-rose-600 dark:text-rose-400" />
+                          )}
                         </button>
                       );
                     })}
@@ -192,6 +202,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: Sta
           tone === "expiring" && "text-amber-600 dark:text-amber-400",
           tone === "fit_out" && "text-orange-600 dark:text-orange-400",
           tone === "on_hold" && "text-violet-600 dark:text-violet-400",
+          tone === "overdue" && "text-rose-600 dark:text-rose-400",
         )}
       >
         {value}
