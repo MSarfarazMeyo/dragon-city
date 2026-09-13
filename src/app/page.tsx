@@ -1,8 +1,13 @@
+import { Button } from "@/components/ui/button";
+
 export default function Home() {
   return (
-    <main style={{ padding: 48, fontFamily: "system-ui, sans-serif" }}>
-      <h1>Dragon City</h1>
-      <p>Project scaffolded. Next: Sprint 0 &mdash; Supabase schema, auth, and the MUI theme.</p>
+    <main className="flex min-h-screen flex-col items-start justify-center gap-4 p-12">
+      <h1 className="text-2xl font-semibold tracking-tight">Dragon City</h1>
+      <p className="text-muted-foreground">
+        Project scaffolded. Next: Sprint 0 &mdash; Supabase schema, auth, and the shadcn/ui shell.
+      </p>
+      <Button>shadcn/ui is wired up</Button>
     </main>
   );
 }
