@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { MerchantHeader } from "@/components/merchant-header";
 
 export default async function MerchantLayout({
   children,
@@ -27,8 +28,9 @@ export default async function MerchantLayout({
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1536px] flex-col p-4 pb-20 md:p-6">
-      {children}
+    <div className="flex min-h-screen flex-col">
+      <MerchantHeader />
+      <div className="mx-auto w-full max-w-[1536px] flex-1 p-4 md:p-6">{children}</div>
     </div>
   );
 }

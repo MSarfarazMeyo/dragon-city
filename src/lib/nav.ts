@@ -16,7 +16,7 @@ export const staffNav: NavItem[] = [
   { href: "/map", label: "Map", icon: LayoutGrid, roles: ["admin", "operations", "finance", "maintenance"] },
   { href: "/merchants", label: "Merchants", icon: Store, roles: ["admin", "operations"] },
   { href: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "finance"] },
-  { href: "/tickets", label: "Tickets", icon: Ticket, roles: ["admin", "maintenance"] },
+  { href: "/tickets", label: "Tickets", icon: Ticket, roles: ["admin", "operations", "finance", "maintenance"] },
   { href: "/accounts", label: "Accounts", icon: Users, roles: ["admin"] },
 ];
 
