@@ -1,9 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { Database } from "@/lib/supabase/database.types";
 
-// Refreshes the Supabase session on every request. Role-based route
-// gating (staff vs. merchant vs. unauthenticated) is added in Sprint 0
-// once the `profiles` table and its `role` column exist.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -16,28 +14,59 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  const supabase = createServerClient(
-    url,
-    anonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
-        },
+  const supabase = createServerClient<Database>(url, anonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value),
+        );
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options),
+        );
       },
     },
-  );
+  });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+  const isLoginPath = pathname === "/login";
+
+  if (!user) {
+    if (!isLoginPath) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    return response;
+  }
+
+  // Signed in — figure out where this role belongs.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const role = profile?.role;
+  const isPortalPath = pathname.startsWith("/portal");
+  const isMerchant = role === "merchant";
+
+  if (isLoginPath) {
+    return NextResponse.redirect(new URL(isMerchant ? "/portal" : "/map", request.url));
+  }
+
+  if (isMerchant && !isPortalPath && pathname !== "/") {
+    return NextResponse.redirect(new URL("/portal", request.url));
+  }
+
+  if (!isMerchant && isPortalPath) {
+    return NextResponse.redirect(new URL("/map", request.url));
+  }
 
   return response;
 }

@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/server";
 
-// The middleware (src/proxy.ts) already redirects based on auth/role for
-// every other path — this covers the bare "/" case with the same logic.
-export default async function RootPage() {
+export default async function MerchantLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -19,5 +22,13 @@ export default async function RootPage() {
     .eq("id", user.id)
     .single();
 
-  redirect(profile?.role === "merchant" ? "/portal" : "/map");
+  if (profile?.role !== "merchant") {
+    redirect("/map");
+  }
+
+  return (
+    <div className="mx-auto flex min-h-screen w-full max-w-[1536px] flex-col p-4 pb-20 md:p-6">
+      {children}
+    </div>
+  );
 }
