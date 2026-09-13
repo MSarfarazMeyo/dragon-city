@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutGrid, Store, Wallet, Ticket, Users } from "lucide-react";
+import { LayoutGrid, Store, Wallet, Ticket, Users, BarChart3 } from "lucide-react";
 
 export type StaffRole = "admin" | "operations" | "finance" | "maintenance";
 
@@ -17,6 +17,7 @@ export const staffNav: NavItem[] = [
   { href: "/merchants", label: "Merchants", icon: Store, roles: ["admin", "operations"] },
   { href: "/finance", label: "Finance", icon: Wallet, roles: ["admin", "finance"] },
   { href: "/tickets", label: "Tickets", icon: Ticket, roles: ["admin", "operations", "finance", "maintenance"] },
+  { href: "/dashboards", label: "Dashboards", icon: BarChart3, roles: ["admin", "operations", "finance"] },
   { href: "/accounts", label: "Accounts", icon: Users, roles: ["admin"] },
 ];
 

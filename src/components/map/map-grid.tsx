@@ -4,22 +4,15 @@ import { useMemo, useState } from "react";
 import { Lock } from "lucide-react";
 import { AddShopDialog } from "@/components/map/add-shop-dialog";
 import { ShopDetailDialog, type ShopDetailUnit } from "@/components/map/shop-detail-dialog";
+import { statusOf as computeStatus, STATUS_LABEL, type ShopStatus, type UnitLease } from "@/lib/shop-status";
 import { cn } from "@/lib/utils";
-
-type UnitLease = {
-  billing_status: string;
-  end_date: string | null;
-  is_locked: boolean;
-  is_overdue: boolean;
-  merchants: { name: string } | null;
-};
 
 export type MapUnit = {
   id: string;
   code: string;
   category: string | null;
   area_sqm: number | null;
-  lease: UnitLease | null;
+  lease: (UnitLease & { is_locked: boolean; merchants: { name: string } | null }) | null;
 };
 
 export type MapZone = {
@@ -29,22 +22,8 @@ export type MapZone = {
   units: MapUnit[];
 };
 
-type Status = "free" | "occupied" | "expiring" | "fit_out" | "on_hold" | "overdue";
-
-const EXPIRING_WITHIN_DAYS = 30;
-
-function statusOf(unit: MapUnit): Status {
-  const lease = unit.lease;
-  if (!lease) return "free";
-  if (lease.billing_status === "fit_out") return "fit_out";
-  if (lease.billing_status === "free_use") return "on_hold";
-  if (lease.is_overdue) return "overdue";
-  if (lease.end_date) {
-    const days = (new Date(lease.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    if (days >= 0 && days <= EXPIRING_WITHIN_DAYS) return "expiring";
-  }
-  return "occupied";
-}
+type Status = ShopStatus;
+const statusOf = (unit: MapUnit) => computeStatus(unit.lease);
 
 const STATUS_STYLE: Record<Status, string> = {
   free: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
@@ -53,15 +32,6 @@ const STATUS_STYLE: Record<Status, string> = {
   fit_out: "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400",
   on_hold: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400",
   overdue: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400",
-};
-
-const STATUS_LABEL: Record<Status, string> = {
-  free: "Free",
-  occupied: "Occupied",
-  expiring: "Expiring",
-  fit_out: "Fit-out",
-  on_hold: "On hold",
-  overdue: "Overdue",
 };
 
 export function MapGrid({
