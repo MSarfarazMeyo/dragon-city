@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { MapGrid, type MapZone } from "@/components/map/map-grid";
+import { ViewFloorPlanDialog } from "@/components/map/view-floor-plan-dialog";
 
 export default async function MapPage() {
   const supabase = await createClient();
 
-  const { data: floor } = await supabase.from("floors").select("id, label").limit(1).single();
+  const { data: floor } = await supabase.from("floors").select("id, label, reference_pdf_url").limit(1).single();
 
   const { data: zones } = await supabase
     .from("zones")
@@ -44,11 +45,14 @@ export default async function MapPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{floor?.label ?? "Map"}</h1>
-        <p className="text-muted-foreground text-sm">
-          The zone grid is the source of truth — shops are added by hand, not extracted from a floor plan.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{floor?.label ?? "Map"}</h1>
+          <p className="text-muted-foreground text-sm">
+            The zone grid is the source of truth — shops are added by hand, not extracted from a floor plan.
+          </p>
+        </div>
+        {floor?.reference_pdf_url && <ViewFloorPlanDialog path={floor.reference_pdf_url} />}
       </div>
       <MapGrid zones={mapZones} merchants={merchants ?? []} />
     </div>
