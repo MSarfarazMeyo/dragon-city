@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
+export { applyTemplateVars, resolveNotificationTemplate } from "@/lib/notification-template";
+
 // Takes whichever client the caller already has (RLS-scoped for
 // interactive ticket actions, service-role for the cron route) so the
 // same helper works from both places.

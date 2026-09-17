@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,43 +36,65 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        <div className="space-y-1 text-center">
-          <h1 className="text-xl font-semibold tracking-tight">Dragon City</h1>
-          <p className="text-sm text-muted-foreground">Sign in to your account</p>
-        </div>
+    <div
+      className="relative flex min-h-dvh items-center justify-center px-4 py-8"
+      style={{ paddingTop: "max(2rem, env(safe-area-inset-top))", paddingBottom: "max(2rem, env(safe-area-inset-bottom))" }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 50% at 20% 20%, oklch(0.88 0.05 200 / 0.55), transparent), radial-gradient(ellipse 60% 45% at 85% 80%, oklch(0.9 0.04 250 / 0.45), transparent)",
+        }}
+      />
+      <Card className="relative w-full max-w-sm border-border/60 shadow-xl shadow-slate-900/5">
+        <CardHeader className="space-y-3 text-center">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary text-sm font-bold tracking-tight text-primary-foreground">
+            DC
+          </div>
+          <div className="space-y-1">
+            <CardTitle className="text-2xl tracking-tight">Dragon City</CardTitle>
+            <CardDescription>Sign in to manage shops, finance, and requests</CardDescription>
+          </div>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                className="h-11"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="h-11"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Signing in…" : "Sign in"}
-        </Button>
-      </form>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="h-11 w-full" disabled={loading}>
+              {loading ? "Signing in…" : "Sign in"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 }

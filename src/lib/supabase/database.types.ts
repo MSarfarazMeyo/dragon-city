@@ -80,29 +80,48 @@ export type Database = {
       documents: {
         Row: {
           created_at: string
+          doc_type: string
           file_path: string
           id: string
+          lease_id: string | null
           merchant_id: string
           name: string
+          period_end: string | null
+          period_start: string | null
           uploaded_by: string | null
         }
         Insert: {
           created_at?: string
+          doc_type?: string
           file_path: string
           id?: string
+          lease_id?: string | null
           merchant_id: string
           name: string
+          period_end?: string | null
+          period_start?: string | null
           uploaded_by?: string | null
         }
         Update: {
           created_at?: string
+          doc_type?: string
           file_path?: string
           id?: string
+          lease_id?: string | null
           merchant_id?: string
           name?: string
+          period_end?: string | null
+          period_start?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_merchant_id_fkey"
             columns: ["merchant_id"]
@@ -112,24 +131,83 @@ export type Database = {
           },
         ]
       }
+      employees: {
+        Row: {
+          active: boolean
+          created_at: string
+          department: string | null
+          email: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          profile_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          profile_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          profile_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       floors: {
         Row: {
+          bg_image_path: string | null
           created_at: string
           id: string
           label: string
+          label_i18n: Json | null
+          map_height: number | null
+          map_width: number | null
           reference_pdf_url: string | null
+          sort_order: number
         }
         Insert: {
+          bg_image_path?: string | null
           created_at?: string
           id?: string
           label: string
+          label_i18n?: Json | null
+          map_height?: number | null
+          map_width?: number | null
           reference_pdf_url?: string | null
+          sort_order?: number
         }
         Update: {
+          bg_image_path?: string | null
           created_at?: string
           id?: string
           label?: string
+          label_i18n?: Json | null
+          map_height?: number | null
+          map_width?: number | null
           reference_pdf_url?: string | null
+          sort_order?: number
         }
         Relationships: []
       }
@@ -164,6 +242,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      invoice_line_templates: {
+        Row: {
+          code: string
+          default_amount: number | null
+          id: string
+          is_deduction: boolean
+          label: string
+          label_i18n: Json | null
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          default_amount?: number | null
+          id?: string
+          is_deduction?: boolean
+          label: string
+          label_i18n?: Json | null
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          default_amount?: number | null
+          id?: string
+          is_deduction?: boolean
+          label?: string
+          label_i18n?: Json | null
+          sort_order?: number
+        }
+        Relationships: []
       }
       invoices: {
         Row: {
@@ -275,6 +383,63 @@ export type Database = {
           },
         ]
       }
+      leasing_leads: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          converted_merchant_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          interested_unit_ids: string[] | null
+          notes: string | null
+          prospect_name: string
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          converted_merchant_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          interested_unit_ids?: string[] | null
+          notes?: string | null
+          prospect_name: string
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          converted_merchant_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          interested_unit_ids?: string[] | null
+          notes?: string | null
+          prospect_name?: string
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leasing_leads_converted_merchant_id_fkey"
+            columns: ["converted_merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leasing_leads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           contact_email: string | null
@@ -320,18 +485,21 @@ export type Database = {
           id: string
           offset_days: number
           template: string
+          template_i18n: Json | null
         }
         Insert: {
           event: string
           id?: string
           offset_days: number
           template: string
+          template_i18n?: Json | null
         }
         Update: {
           event?: string
           id?: string
           offset_days?: number
           template?: string
+          template_i18n?: Json | null
         }
         Relationships: []
       }
@@ -421,11 +589,42 @@ export type Database = {
           },
         ]
       }
+      price_standards: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          unit_price: number
+          updated_at: string
+          zone_code: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          unit_price: number
+          updated_at?: string
+          zone_code?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          unit_price?: number
+          updated_at?: string
+          zone_code?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           full_name: string | null
           id: string
+          locale: string
           merchant_id: string | null
           role: string
         }
@@ -433,6 +632,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          locale?: string
           merchant_id?: string | null
           role: string
         }
@@ -440,6 +640,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          locale?: string
           merchant_id?: string | null
           role?: string
         }
@@ -455,6 +656,7 @@ export type Database = {
       }
       tickets: {
         Row: {
+          archived_at: string | null
           assigned_to: string | null
           created_at: string
           created_by: string | null
@@ -468,6 +670,7 @@ export type Database = {
           unit_id: string | null
         }
         Insert: {
+          archived_at?: string | null
           assigned_to?: string | null
           created_at?: string
           created_by?: string | null
@@ -481,6 +684,7 @@ export type Database = {
           unit_id?: string | null
         }
         Update: {
+          archived_at?: string | null
           assigned_to?: string | null
           created_at?: string
           created_by?: string | null
@@ -524,6 +728,54 @@ export type Database = {
           },
         ]
       }
+      unit_geometries: {
+        Row: {
+          created_at: string
+          floor_id: string
+          id: string
+          map_height: number
+          map_width: number
+          shape: Json
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          floor_id: string
+          id?: string
+          map_height: number
+          map_width: number
+          shape: Json
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          floor_id?: string
+          id?: string
+          map_height?: number
+          map_width?: number
+          shape?: Json
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_geometries_floor_id_fkey"
+            columns: ["floor_id"]
+            isOneToOne: false
+            referencedRelation: "floors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_geometries_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: true
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       units: {
         Row: {
           area_sqm: number | null
@@ -532,6 +784,7 @@ export type Database = {
           created_at: string
           grid_order: number
           id: string
+          property_status: string
           slug: string
           updated_at: string
           zone_id: string
@@ -543,6 +796,7 @@ export type Database = {
           created_at?: string
           grid_order?: number
           id?: string
+          property_status?: string
           slug: string
           updated_at?: string
           zone_id: string
@@ -554,6 +808,7 @@ export type Database = {
           created_at?: string
           grid_order?: number
           id?: string
+          property_status?: string
           slug?: string
           updated_at?: string
           zone_id?: string

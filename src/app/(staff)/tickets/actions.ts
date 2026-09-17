@@ -83,3 +83,47 @@ export async function updateStatus(ticketId: string, status: "in_progress" | "re
 
   revalidatePath("/tickets");
 }
+
+export async function reopenTicket(ticketId: string) {
+  const supabase = await createClient();
+  await supabase
+    .from("tickets")
+    .update({ status: "open", resolved_at: null, archived_at: null })
+    .eq("id", ticketId);
+  revalidatePath("/tickets");
+}
+
+export async function archiveTicket(ticketId: string) {
+  const supabase = await createClient();
+  await supabase
+    .from("tickets")
+    .update({
+      archived_at: new Date().toISOString(),
+      status: "resolved",
+      resolved_at: new Date().toISOString(),
+    })
+    .eq("id", ticketId);
+  revalidatePath("/tickets");
+}
+
+export async function unarchiveTicket(ticketId: string) {
+  const supabase = await createClient();
+  await supabase.from("tickets").update({ archived_at: null }).eq("id", ticketId);
+  revalidatePath("/tickets");
+}
+
+export async function deleteTicket(ticketId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin") return { error: "Only admins can permanently delete tickets." };
+
+  const { error } = await supabase.from("tickets").delete().eq("id", ticketId);
+  if (error) return { error: error.message };
+  revalidatePath("/tickets");
+  return null;
+}

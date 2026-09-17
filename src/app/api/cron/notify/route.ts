@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
+import { applyTemplateVars, resolveNotificationTemplate } from "@/lib/notification-template";
 
 // Hit by an external scheduler (Vercel Cron, or manually while developing).
 // Service-role only — reads notification_rules, checks invoices/leases
@@ -29,11 +30,12 @@ export async function POST(request: NextRequest) {
 
       for (const inv of invoices ?? []) {
         const unitCode = inv.leases?.units?.code ?? "?";
-        const body = rule.template.replace("{{unit_code}}", unitCode).replace("{{due_date}}", inv.due_date);
         const type = `invoice_due_${rule.offset_days}_${inv.id}`;
         const recipients = await getRecipients(supabase, inv.leases?.merchant_id ?? null, "finance");
         for (const r of recipients) {
           if (await alreadySent(supabase, r.id, type)) continue;
+          const template = resolveNotificationTemplate(rule, r.locale);
+          const body = applyTemplateVars(template, { unit_code: unitCode, due_date: inv.due_date });
           await deliver(supabase, r, type, `Invoice due for ${unitCode}`, body);
           created.push(type);
         }
@@ -49,11 +51,15 @@ export async function POST(request: NextRequest) {
 
       for (const lease of leases ?? []) {
         const unitCode = lease.units?.code ?? "?";
-        const body = rule.template.replace("{{unit_code}}", unitCode).replace("{{end_date}}", lease.end_date ?? "");
         const type = `lease_expiring_${rule.offset_days}_${lease.id}`;
         const recipients = await getRecipients(supabase, lease.merchant_id, "operations");
         for (const r of recipients) {
           if (await alreadySent(supabase, r.id, type)) continue;
+          const template = resolveNotificationTemplate(rule, r.locale);
+          const body = applyTemplateVars(template, {
+            unit_code: unitCode,
+            end_date: lease.end_date ?? "",
+          });
           await deliver(supabase, r, type, `Lease expiring for ${unitCode}`, body);
           created.push(type);
         }
@@ -72,16 +78,20 @@ function addDays(date: Date, days: number) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getRecipients(supabase: any, merchantId: string | null, staffRole: string) {
-  const { data: staff } = await supabase.from("profiles").select("id").eq("role", staffRole);
-  const recipients = [...(staff ?? [])];
+  const { data: staff } = await supabase.from("profiles").select("id, locale").eq("role", staffRole);
+  const recipients: { id: string; locale: string }[] = (staff ?? []).map(
+    (p: { id: string; locale?: string }) => ({ id: p.id, locale: p.locale ?? "en" }),
+  );
 
   if (merchantId) {
     const { data: merchantProfile } = await supabase
       .from("profiles")
-      .select("id")
+      .select("id, locale")
       .eq("merchant_id", merchantId)
       .maybeSingle();
-    if (merchantProfile) recipients.push(merchantProfile);
+    if (merchantProfile) {
+      recipients.push({ id: merchantProfile.id, locale: merchantProfile.locale ?? "en" });
+    }
   }
 
   return recipients;

@@ -12,10 +12,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 type Notification = Awaited<ReturnType<typeof getNotifications>>[number];
 
-export function NotificationBell() {
+export function NotificationBell({ className }: { className?: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -32,7 +33,13 @@ export function NotificationBell() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="ghost" size="icon" className="relative" onClick={() => setOpen(true)} aria-label="Notifications">
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn("relative", className)}
+        onClick={() => setOpen(true)}
+        aria-label="Notifications"
+      >
         <Bell className="size-4" />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-medium text-white">

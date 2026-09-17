@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { MerchantHeader } from "@/components/merchant-header";
+import { I18nProvider } from "@/lib/i18n/context";
 
 export default async function MerchantLayout({
   children,
@@ -19,7 +19,7 @@ export default async function MerchantLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, locale")
     .eq("id", user.id)
     .single();
 
@@ -27,10 +27,5 @@ export default async function MerchantLayout({
     redirect("/map");
   }
 
-  return (
-    <div className="flex min-h-screen flex-col">
-      <MerchantHeader />
-      <div className="mx-auto w-full max-w-[1536px] flex-1 p-4 md:p-6">{children}</div>
-    </div>
-  );
+  return <I18nProvider initialLocale={profile.locale}>{children}</I18nProvider>;
 }

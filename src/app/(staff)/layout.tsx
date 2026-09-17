@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell";
+import { I18nProvider } from "@/lib/i18n/context";
 import type { StaffRole } from "@/lib/nav";
 
 export default async function StaffLayout({
@@ -20,7 +21,7 @@ export default async function StaffLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, locale")
     .eq("id", user.id)
     .single();
 
@@ -30,5 +31,9 @@ export default async function StaffLayout({
     redirect("/portal");
   }
 
-  return <AppShell role={profile.role as StaffRole}>{children}</AppShell>;
+  return (
+    <I18nProvider initialLocale={profile.locale}>
+      <AppShell role={profile.role as StaffRole}>{children}</AppShell>
+    </I18nProvider>
+  );
 }

@@ -8,6 +8,7 @@ import {
   vacateLease,
   type LeaseFormState,
 } from "@/app/(staff)/map/lease-actions";
+import { updatePropertyStatus, updateUnitGeometry, type UnitEditState } from "@/app/(staff)/map/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { PROPERTY_STATUS_LABEL, type PropertyStatus } from "@/lib/shop-status";
 
 type HistoryLease = Awaited<ReturnType<typeof getUnitHistory>>[number];
 
@@ -28,6 +30,9 @@ export type ShopDetailUnit = {
   code: string;
   category: string | null;
   area_sqm: number | null;
+  property_status?: string | null;
+  floor_id?: string | null;
+  geometry?: { x: number; y: number; w: number; h: number; map_width: number; map_height: number } | null;
 };
 
 export function ShopDetailDialog({
@@ -102,6 +107,9 @@ function ShopDetailBody({
         </div>
       )}
 
+      <PropertyStatusForm unit={unit} />
+      {unit.floor_id && <GeometryForm unit={unit} />}
+
       {pastLeases.length > 0 && (
         <div className="space-y-2 border-t pt-4">
           <h3 className="text-sm font-medium">History</h3>
@@ -118,6 +126,60 @@ function ShopDetailBody({
         </div>
       )}
     </>
+  );
+}
+
+function PropertyStatusForm({ unit }: { unit: ShopDetailUnit }) {
+  const [state, formAction, pending] = useActionState<UnitEditState, FormData>(updatePropertyStatus, null);
+  return (
+    <form action={formAction} className="space-y-2 border-t pt-4">
+      <input type="hidden" name="unit_id" value={unit.id} />
+      <Label htmlFor="property_status">Property status</Label>
+      <div className="flex gap-2">
+        <select
+          id="property_status"
+          name="property_status"
+          defaultValue={unit.property_status ?? "unknown"}
+          className="border-input h-9 flex-1 rounded-md border bg-transparent px-3 text-sm"
+        >
+          {(Object.keys(PROPERTY_STATUS_LABEL) as PropertyStatus[]).map((key) => (
+            <option key={key} value={key}>
+              {PROPERTY_STATUS_LABEL[key]}
+            </option>
+          ))}
+        </select>
+        <Button type="submit" size="sm" variant="outline" disabled={pending}>
+          {pending ? "Saving…" : "Save"}
+        </Button>
+      </div>
+      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+    </form>
+  );
+}
+
+function GeometryForm({ unit }: { unit: ShopDetailUnit }) {
+  const g = unit.geometry;
+  const [state, formAction, pending] = useActionState<UnitEditState, FormData>(updateUnitGeometry, null);
+  return (
+    <form action={formAction} className="space-y-2 border-t pt-4">
+      <input type="hidden" name="unit_id" value={unit.id} />
+      <input type="hidden" name="floor_id" value={unit.floor_id ?? ""} />
+      <input type="hidden" name="map_width" value={g?.map_width ?? 2384} />
+      <input type="hidden" name="map_height" value={g?.map_height ?? 1684} />
+      <h3 className="text-sm font-medium">Map box (adjust if misaligned)</h3>
+      <div className="grid grid-cols-4 gap-2">
+        {(["x", "y", "w", "h"] as const).map((key) => (
+          <div key={key} className="space-y-1">
+            <Label htmlFor={key}>{key.toUpperCase()}</Label>
+            <Input id={key} name={key} type="number" step="0.01" defaultValue={g?.[key] ?? 0} required />
+          </div>
+        ))}
+      </div>
+      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+      <Button type="submit" size="sm" variant="outline" disabled={pending}>
+        {pending ? "Saving…" : "Update geometry"}
+      </Button>
+    </form>
   );
 }
 

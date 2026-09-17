@@ -62,6 +62,18 @@ export async function GET(request: NextRequest) {
         balance: (total - paid).toFixed(2),
       };
     });
+  } else if (entity === "merchants") {
+    const { data } = await supabase
+      .from("merchants")
+      .select("name, type, contact_phone, contact_name, cr_number, contact_email");
+    rows = (data ?? []).map((m) => ({
+      name: m.name,
+      type: m.type,
+      phone: m.contact_phone ?? "",
+      contact_name: m.contact_name ?? "",
+      cr_number: m.cr_number ?? "",
+      contact_email: m.contact_email ?? "",
+    }));
   } else if (entity === "tickets") {
     const { data } = await supabase
       .from("tickets")
@@ -77,7 +89,10 @@ export async function GET(request: NextRequest) {
       resolved_at: t.resolved_at ?? "",
     }));
   } else {
-    return NextResponse.json({ error: "Unknown entity. Use units, leases, invoices, or tickets." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Unknown entity. Use units, leases, invoices, merchants, or tickets." },
+      { status: 400 },
+    );
   }
 
   const csv = toCsv(rows);

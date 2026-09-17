@@ -141,6 +141,29 @@ export async function toggleLock(leaseId: string, locked: boolean) {
   revalidatePath("/map");
 }
 
+export async function deleteInvoice(invoiceId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin" && profile?.role !== "finance") {
+    return { error: "Only finance or admin can delete invoices." };
+  }
+
+  // Payments and line items cascade / need manual cleanup
+  await supabase.from("payments").delete().eq("invoice_id", invoiceId);
+  await supabase.from("invoice_line_items").delete().eq("invoice_id", invoiceId);
+  const { error } = await supabase.from("invoices").delete().eq("id", invoiceId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/finance");
+  revalidatePath("/map");
+  return null;
+}
+
 export async function uploadDocument(
   _prevState: FinanceFormState,
   formData: FormData,
@@ -148,10 +171,23 @@ export async function uploadDocument(
   const supabase = await createClient();
 
   const merchant_id = String(formData.get("merchant_id") ?? "");
+  const doc_type = String(formData.get("doc_type") ?? "other");
   const file = formData.get("file") as File | null;
 
   if (!merchant_id || !file || file.size === 0) {
     return { error: "Pick a merchant and a file." };
+  }
+
+  const allowedDocTypes = [
+    "confirmation_letter",
+    "fee_notice",
+    "cr",
+    "iqama",
+    "contract",
+    "other",
+  ];
+  if (!allowedDocTypes.includes(doc_type)) {
+    return { error: "Invalid document type." };
   }
 
   const {
@@ -166,6 +202,7 @@ export async function uploadDocument(
     merchant_id,
     file_path: path,
     name: file.name,
+    doc_type,
     uploaded_by: user?.id,
   });
   if (docError) return { error: docError.message };

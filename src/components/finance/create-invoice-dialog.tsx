@@ -18,9 +18,16 @@ import {
 } from "@/components/ui/dialog";
 
 type Lease = { id: string; unit_code: string; merchant_name: string };
+type Template = { code: string; label: string; is_deduction: boolean; sort_order: number };
 type Row = { label: string; amount: string };
 
-export function CreateInvoiceDialog({ leases }: { leases: Lease[] }) {
+export function CreateInvoiceDialog({
+  leases,
+  templates,
+}: {
+  leases: Lease[];
+  templates: Template[];
+}) {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<Row[]>([{ label: "Service fee", amount: "" }]);
   const formRef = useRef<HTMLFormElement>(null);
@@ -35,6 +42,16 @@ export function CreateInvoiceDialog({ leases }: { leases: Lease[] }) {
     }
     wasPending.current = pending;
   }, [pending, state]);
+
+  function applyTemplate() {
+    const sorted = [...templates].sort((a, b) => a.sort_order - b.sort_order);
+    setRows(
+      sorted.map((t) => ({
+        label: t.label,
+        amount: "",
+      })),
+    );
+  }
 
   const lineItemsJson = JSON.stringify(
     rows
@@ -89,9 +106,20 @@ export function CreateInvoiceDialog({ leases }: { leases: Lease[] }) {
           </div>
 
           <div className="space-y-2">
-            <Label>Line items</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Line items</Label>
+              {templates.length > 0 && (
+                <Button type="button" variant="outline" size="sm" onClick={applyTemplate}>
+                  Apply confirmation-letter template
+                </Button>
+              )}
+            </div>
             <div className="space-y-2">
-              {rows.map((row, i) => (
+              {rows.map((row, i) => {
+                const isDeduction = templates.some(
+                  (t) => t.label === row.label && t.is_deduction,
+                );
+                return (
                 <div key={i} className="flex gap-2">
                   <Input
                     placeholder="Label"
@@ -100,7 +128,7 @@ export function CreateInvoiceDialog({ leases }: { leases: Lease[] }) {
                     className="flex-1"
                   />
                   <Input
-                    placeholder="Amount"
+                    placeholder={isDeduction ? "-0.00" : "Amount"}
                     type="number"
                     step="0.01"
                     value={row.amount}
@@ -118,7 +146,8 @@ export function CreateInvoiceDialog({ leases }: { leases: Lease[] }) {
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
-              ))}
+              );
+              })}
             </div>
             <Button
               type="button"

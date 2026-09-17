@@ -106,7 +106,13 @@ export function CreateTicketDialog({
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Input id="description" name="description" placeholder="Optional" />
+            <textarea
+              id="description"
+              name="description"
+              placeholder="What happened, where, and what you need…"
+              rows={4}
+              className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+            />
           </div>
 
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}

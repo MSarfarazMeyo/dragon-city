@@ -88,3 +88,80 @@ export async function addShop(
   revalidatePath("/map");
   return null;
 }
+
+export type UnitEditState = { error?: string } | null;
+
+const PROPERTY_STATUSES = [
+  "normal",
+  "inventory",
+  "absconded",
+  "moved_out",
+  "showroom",
+  "holding",
+  "follow_up",
+  "unknown",
+  "empty",
+] as const;
+
+export async function updatePropertyStatus(
+  _prev: UnitEditState,
+  formData: FormData,
+): Promise<UnitEditState> {
+  const supabase = await createClient();
+  const unitId = String(formData.get("unit_id") ?? "");
+  const property_status = String(formData.get("property_status") ?? "");
+  if (!unitId || !(PROPERTY_STATUSES as readonly string[]).includes(property_status)) {
+    return { error: "Invalid unit or status." };
+  }
+  const { error } = await supabase.from("units").update({ property_status }).eq("id", unitId);
+  if (error) return { error: error.message };
+  revalidatePath("/map");
+  return null;
+}
+
+export async function updateUnitGeometry(
+  _prev: UnitEditState,
+  formData: FormData,
+): Promise<UnitEditState> {
+  const supabase = await createClient();
+  const unitId = String(formData.get("unit_id") ?? "");
+  const floorId = String(formData.get("floor_id") ?? "");
+  const x = Number(formData.get("x"));
+  const y = Number(formData.get("y"));
+  const w = Number(formData.get("w"));
+  const h = Number(formData.get("h"));
+  const map_width = Number(formData.get("map_width") || 2384);
+  const map_height = Number(formData.get("map_height") || 1684);
+
+  if (!unitId || !floorId || [x, y, w, h].some((n) => Number.isNaN(n))) {
+    return { error: "Geometry values are required." };
+  }
+
+  const shape = { type: "box" as const, x, y, w, h };
+  const { data: existing } = await supabase
+    .from("unit_geometries")
+    .select("id")
+    .eq("unit_id", unitId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("unit_geometries")
+      .update({ shape, floor_id: floorId, map_width, map_height })
+      .eq("id", existing.id);
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.from("unit_geometries").insert({
+      unit_id: unitId,
+      floor_id: floorId,
+      shape,
+      map_width,
+      map_height,
+    });
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/map");
+  return null;
+}
+

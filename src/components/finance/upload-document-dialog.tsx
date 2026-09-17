@@ -6,6 +6,7 @@ import { Upload } from "lucide-react";
 import { uploadDocument, type FinanceFormState } from "@/app/(staff)/finance/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { DOC_TYPES, DOC_TYPE_LABEL } from "@/lib/doc-types";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,22 @@ export function UploadDocumentDialog({ merchants }: { merchants: { id: string; n
               {merchants.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="doc_type">Document type</Label>
+            <select
+              id="doc_type"
+              name="doc_type"
+              defaultValue="other"
+              className="border-input h-9 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+            >
+              {DOC_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {DOC_TYPE_LABEL[t]}
                 </option>
               ))}
             </select>
