@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutGrid, Store, Wallet, Ticket, Users, BarChart3, Handshake, Settings } from "lucide-react";
+import { LayoutGrid, Store, Wallet, Ticket, BarChart3, Handshake, Settings, UsersRound } from "lucide-react";
 
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
@@ -14,15 +14,17 @@ export type NavItem = {
 
 // One source of truth — the desktop sidebar and the mobile bottom bar
 // both render from this list, filtered by the signed-in role.
+// (Accounts was removed here — merchant/staff login creation now lives on
+// their own detail pages instead of a standalone tab.)
 export const staffNav: NavItem[] = [
   { href: "/map", labelKey: "map", icon: LayoutGrid, roles: ["admin", "operations", "finance", "maintenance"] },
   { href: "/merchants", labelKey: "merchants", icon: Store, roles: ["admin", "operations"] },
-  { href: "/leasing", labelKey: "leasing", icon: Handshake, roles: ["admin", "operations"] },
-  { href: "/finance", labelKey: "finance", icon: Wallet, roles: ["admin", "finance"] },
+  { href: "/leads", labelKey: "leads", icon: Handshake, roles: ["admin", "operations"] },
+  { href: "/invoices", labelKey: "invoices", icon: Wallet, roles: ["admin", "finance"] },
   { href: "/tickets", labelKey: "tickets", icon: Ticket, roles: ["admin", "operations", "finance", "maintenance"] },
   { href: "/dashboards", labelKey: "dashboards", icon: BarChart3, roles: ["admin", "operations", "finance"] },
-  { href: "/accounts", labelKey: "accounts", icon: Users, roles: ["admin"] },
-  { href: "/admin", labelKey: "admin", icon: Settings, roles: ["admin"] },
+  { href: "/staff", labelKey: "staff", icon: UsersRound, roles: ["admin"] },
+  { href: "/settings", labelKey: "settings", icon: Settings, roles: ["admin"] },
 ];
 
 export function navForRole(role: StaffRole): NavItem[] {

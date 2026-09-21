@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Upload } from "lucide-react";
 
-import { uploadDocument, type FinanceFormState } from "@/app/(staff)/finance/actions";
+import { uploadDocument, type FinanceFormState } from "@/app/(staff)/invoices/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DOC_TYPES, DOC_TYPE_LABEL } from "@/lib/doc-types";

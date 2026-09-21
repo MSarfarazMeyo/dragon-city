@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Wallet } from "lucide-react";
 
-import { recordPayment, type FinanceFormState } from "@/app/(staff)/finance/actions";
+import { recordPayment, type FinanceFormState } from "@/app/(staff)/invoices/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

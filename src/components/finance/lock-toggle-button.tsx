@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { Lock, LockOpen } from "lucide-react";
 
-import { toggleLock } from "@/app/(staff)/finance/actions";
+import { toggleLock } from "@/app/(staff)/invoices/actions";
 import { Button } from "@/components/ui/button";
 
 export function LockToggleButton({ leaseId, locked }: { leaseId: string; locked: boolean }) {

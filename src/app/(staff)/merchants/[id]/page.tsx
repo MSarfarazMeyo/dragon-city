@@ -1,8 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { KeyRound, Store, Ticket, Wallet } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getAvatarUrl } from "@/lib/avatar-actions";
+import { findMerchantAccount } from "@/app/(staff)/merchants/account-actions";
+import { AccountPanel } from "@/components/merchants/account-panel";
+import { AssignShopDialog } from "@/components/merchants/assign-shop-dialog";
+import { VacateLeaseButton } from "@/components/merchants/vacate-lease-button";
+import { AvatarUpload } from "@/components/ui/avatar-upload";
+import { DetailTabs } from "@/components/ui/detail-tabs";
+import { StatCard, StatCardRow } from "@/components/ui/stat-card";
 import { DownloadDocumentButton } from "@/components/finance/download-document-button";
+import { UploadDocumentDialog } from "@/components/finance/upload-document-dialog";
 import { DOC_TYPE_LABEL, type DocType } from "@/lib/doc-types";
 import { cn } from "@/lib/utils";
 
@@ -12,205 +22,339 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
 
   const { data: merchant } = await supabase
     .from("merchants")
-    .select("id, name, type, cr_number, contact_name, contact_phone, contact_email, notes, created_at")
+    .select("id, name, type, logo_path, cr_number, contact_name, contact_phone, contact_email, notes, created_at")
     .eq("id", id)
     .maybeSingle();
 
   if (!merchant) notFound();
 
-  const { data: leases } = await supabase
-    .from("leases")
-    .select("id, start_date, end_date, status, is_locked, rent_amount, service_fee, units(code)")
-    .eq("merchant_id", id)
-    .order("start_date", { ascending: false });
+  const [{ data: leases }, { data: documents }, { data: tickets }, { data: allUnits }, { data: activeLeaseUnits }, account] =
+    await Promise.all([
+      supabase
+        .from("leases")
+        .select("id, start_date, end_date, status, is_locked, rent_amount, service_fee, units(id, code)")
+        .eq("merchant_id", id)
+        .order("start_date", { ascending: false }),
+      supabase
+        .from("documents")
+        .select("id, name, file_path, doc_type, created_at")
+        .eq("merchant_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("tickets")
+        .select("id, type, department, status, description, created_at, resolved_at, units(code)")
+        .eq("merchant_id", id)
+        .order("created_at", { ascending: false })
+        .limit(30),
+      supabase.from("units").select("id, code").order("code"),
+      supabase.from("leases").select("unit_id").eq("status", "active"),
+      findMerchantAccount(id),
+    ]);
 
-  const { data: documents } = await supabase
-    .from("documents")
-    .select("id, name, file_path, doc_type, created_at")
-    .eq("merchant_id", id)
-    .order("created_at", { ascending: false });
+  const activeUnitIds = new Set((activeLeaseUnits ?? []).map((l) => l.unit_id));
+  const freeUnits = (allUnits ?? []).filter((u) => !activeUnitIds.has(u.id));
 
   const leaseIds = (leases ?? []).map((l) => l.id);
   const { data: invoices } =
     leaseIds.length > 0
       ? await supabase
           .from("invoices")
-          .select(
-            "id, period_start, period_end, due_date, status, lease_id, invoice_line_items(amount), payments(amount)",
-          )
+          .select("id, period_start, period_end, due_date, status, lease_id, invoice_line_items(amount), payments(amount)")
           .in("lease_id", leaseIds)
           .order("due_date", { ascending: false })
+          .limit(30)
       : { data: [] };
 
+  const logoUrl = await getAvatarUrl(merchant.logo_path);
   const today = new Date().toISOString().slice(0, 10);
   const activeLeases = (leases ?? []).filter((l) => l.status === "active");
   const historyLeases = (leases ?? []).filter((l) => l.status !== "active");
+  const openTickets = (tickets ?? []).filter((t) => t.status !== "resolved");
 
-  let totalInvoiced = 0;
   let totalOutstanding = 0;
   for (const inv of invoices ?? []) {
+    if (inv.status !== "pending") continue;
     const total = inv.invoice_line_items.reduce((s, li) => s + li.amount, 0);
     const paid = inv.payments.reduce((s, p) => s + p.amount, 0);
-    totalInvoiced += total;
-    if (inv.status === "pending") totalOutstanding += total - paid;
+    totalOutstanding += total - paid;
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <Link href="/merchants" className="text-sm text-muted-foreground hover:text-foreground">
           ← Merchants
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{merchant.name}</h1>
-        <p className="text-muted-foreground text-sm capitalize">{merchant.type}</p>
+        <div className="mt-2 flex items-center gap-4">
+          <AvatarUpload
+            target="merchant"
+            entityId={merchant.id}
+            currentUrl={logoUrl}
+            fallbackText={merchant.name.slice(0, 2).toUpperCase()}
+            revalidate={`/merchants/${merchant.id}`}
+          />
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{merchant.name}</h1>
+            <p className="text-muted-foreground text-sm capitalize">{merchant.type}</p>
+          </div>
+        </div>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <InfoCard label="Contact" value={merchant.contact_name ?? "—"} />
-        <InfoCard label="Phone" value={merchant.contact_phone ?? "—"} />
-        <InfoCard label="Email" value={merchant.contact_email ?? "—"} />
-        <InfoCard label="CR number" value={merchant.cr_number ?? "—"} />
-      </section>
+      <DetailTabs
+        defaultTab="overview"
+        tabs={[
+          {
+            id: "overview",
+            label: "Overview",
+            content: (
+              <div className="space-y-6">
+                <StatCardRow>
+                  <StatCard label="Active shops" value={activeLeases.length} icon={Store} tone="teal" />
+                  <StatCard
+                    label="Outstanding"
+                    value={`SAR ${totalOutstanding.toFixed(2)}`}
+                    icon={Wallet}
+                    tone={totalOutstanding > 0 ? "amber" : "neutral"}
+                  />
+                  <StatCard label="Open tickets" value={openTickets.length} icon={Ticket} tone={openTickets.length ? "rose" : "neutral"} />
+                  <StatCard label="Login" value={account ? "Active" : "None"} icon={KeyRound} tone={account ? "sky" : "neutral"} />
+                </StatCardRow>
 
-      {merchant.notes && (
-        <p className="rounded-lg border px-4 py-3 text-sm text-muted-foreground">{merchant.notes}</p>
-      )}
+                <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <InfoCard label="Contact" value={merchant.contact_name ?? "—"} />
+                  <InfoCard label="Phone" value={merchant.contact_phone ?? "—"} />
+                  <InfoCard label="Email" value={merchant.contact_email ?? "—"} />
+                  <InfoCard label="CR number" value={merchant.cr_number ?? "—"} />
+                </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Active leases</h2>
-        {activeLeases.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No active leases.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-                  <th className="px-4 py-2 font-medium">Unit</th>
-                  <th className="px-4 py-2 font-medium">Period</th>
-                  <th className="px-4 py-2 font-medium text-right">Rent</th>
-                  <th className="px-4 py-2 font-medium">Locked</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeLeases.map((l) => (
-                  <tr key={l.id} className="border-b last:border-0">
-                    <td className="px-4 py-2 font-medium">{l.units?.code ?? "?"}</td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      {l.start_date} → {l.end_date ?? "open"}
-                    </td>
-                    <td className="px-4 py-2 text-right tabular-nums">{l.rent_amount?.toFixed(2) ?? "—"}</td>
-                    <td className="px-4 py-2">{l.is_locked ? "Yes" : "No"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {historyLeases.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Lease history</h2>
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-                  <th className="px-4 py-2 font-medium">Unit</th>
-                  <th className="px-4 py-2 font-medium">Period</th>
-                  <th className="px-4 py-2 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historyLeases.map((l) => (
-                  <tr key={l.id} className="border-b last:border-0">
-                    <td className="px-4 py-2 font-medium">{l.units?.code ?? "?"}</td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      {l.start_date} → {l.end_date ?? "—"}
-                    </td>
-                    <td className="px-4 py-2 capitalize">{l.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Invoices summary</h2>
-        <div className="flex flex-wrap gap-3">
-          <SummaryStat label="Total invoiced" value={totalInvoiced.toFixed(2)} />
-          <SummaryStat label="Outstanding" value={totalOutstanding.toFixed(2)} />
-          <SummaryStat label="Invoice count" value={invoices?.length ?? 0} />
-        </div>
-        {(invoices?.length ?? 0) > 0 && (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-                  <th className="px-4 py-2 font-medium">Period</th>
-                  <th className="px-4 py-2 font-medium">Due</th>
-                  <th className="px-4 py-2 font-medium text-right">Total</th>
-                  <th className="px-4 py-2 font-medium text-right">Balance</th>
-                  <th className="px-4 py-2 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices!.map((inv) => {
-                  const total = inv.invoice_line_items.reduce((s, li) => s + li.amount, 0);
-                  const paid = inv.payments.reduce((s, p) => s + p.amount, 0);
-                  const balance = total - paid;
-                  const overdue = inv.status === "pending" && inv.due_date < today;
-                  return (
-                    <tr key={inv.id} className="border-b last:border-0">
-                      <td className="px-4 py-2 text-muted-foreground">
-                        {inv.period_start} → {inv.period_end}
-                      </td>
-                      <td className="px-4 py-2 text-muted-foreground">{inv.due_date}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{total.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{balance.toFixed(2)}</td>
-                      <td className="px-4 py-2">
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-xs font-medium",
-                            inv.status === "paid" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-                            inv.status === "pending" && !overdue && "bg-sky-500/10 text-sky-700 dark:text-sky-400",
-                            overdue && "bg-rose-500/10 text-rose-700 dark:text-rose-400",
-                          )}
-                        >
-                          {overdue ? "Overdue" : inv.status === "paid" ? "Paid" : "Pending"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Documents</h2>
-        {!documents || documents.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No documents on file.</p>
-        ) : (
-          <ul className="divide-y rounded-lg border">
-            {documents.map((doc) => (
-              <li key={doc.id} className="flex items-center justify-between px-4 py-2 text-sm">
-                <div>
-                  <div className="font-medium">{doc.name}</div>
-                  <div className="text-muted-foreground text-xs">
-                    {DOC_TYPE_LABEL[doc.doc_type as DocType] ?? doc.doc_type} ·{" "}
-                    {new Date(doc.created_at).toLocaleDateString()}
-                  </div>
+                {merchant.notes && (
+                  <p className="rounded-lg border px-4 py-3 text-sm text-muted-foreground">{merchant.notes}</p>
+                )}
+              </div>
+            ),
+          },
+          {
+            id: "shops",
+            label: "Shops",
+            count: activeLeases.length,
+            content: (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Active shops</h2>
+                  <AssignShopDialog merchantId={merchant.id} freeUnits={freeUnits} />
                 </div>
-                <DownloadDocumentButton filePath={doc.file_path} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                {activeLeases.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No active shops. Assign one to get started.</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
+                          <th className="px-4 py-2 font-medium">Unit</th>
+                          <th className="px-4 py-2 font-medium">Period</th>
+                          <th className="px-4 py-2 font-medium text-right">Rent</th>
+                          <th className="px-4 py-2 font-medium"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeLeases.map((l) => (
+                          <tr key={l.id} className="border-b last:border-0">
+                            <td className="px-4 py-2 font-medium">
+                              {l.units ? (
+                                <Link href={`/map/units/${l.units.id}`} className="hover:underline">
+                                  {l.units.code}
+                                </Link>
+                              ) : (
+                                "?"
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-muted-foreground">
+                              {l.start_date} → {l.end_date ?? "open"}
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums">{l.rent_amount?.toFixed(2) ?? "—"}</td>
+                            <td className="px-4 py-2 text-right">
+                              <VacateLeaseButton leaseId={l.id} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {historyLeases.length > 0 && (
+                  <>
+                    <h2 className="text-lg font-semibold">Lease history</h2>
+                    <div className="overflow-x-auto rounded-lg border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
+                            <th className="px-4 py-2 font-medium">Unit</th>
+                            <th className="px-4 py-2 font-medium">Period</th>
+                            <th className="px-4 py-2 font-medium">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {historyLeases.map((l) => (
+                            <tr key={l.id} className="border-b last:border-0">
+                              <td className="px-4 py-2 font-medium">{l.units?.code ?? "?"}</td>
+                              <td className="px-4 py-2 text-muted-foreground">
+                                {l.start_date} → {l.end_date ?? "—"}
+                              </td>
+                              <td className="px-4 py-2 capitalize">{l.status}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            ),
+          },
+          {
+            id: "invoices",
+            label: "Invoices",
+            count: invoices?.length ?? 0,
+            content: (
+              <div className="space-y-3">
+                {!invoices || invoices.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No invoices yet.</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
+                          <th className="px-4 py-2 font-medium">Period</th>
+                          <th className="px-4 py-2 font-medium">Due</th>
+                          <th className="px-4 py-2 font-medium text-right">Total</th>
+                          <th className="px-4 py-2 font-medium text-right">Balance</th>
+                          <th className="px-4 py-2 font-medium">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoices.map((inv) => {
+                          const total = inv.invoice_line_items.reduce((s, li) => s + li.amount, 0);
+                          const paid = inv.payments.reduce((s, p) => s + p.amount, 0);
+                          const balance = total - paid;
+                          const overdue = inv.status === "pending" && inv.due_date < today;
+                          return (
+                            <tr key={inv.id} className="border-b last:border-0">
+                              <td className="px-4 py-2 text-muted-foreground">
+                                <Link href={`/invoices/${inv.id}`} className="hover:underline">
+                                  {inv.period_start} → {inv.period_end}
+                                </Link>
+                              </td>
+                              <td className="px-4 py-2 text-muted-foreground">{inv.due_date}</td>
+                              <td className="px-4 py-2 text-right tabular-nums">{total.toFixed(2)}</td>
+                              <td className="px-4 py-2 text-right tabular-nums">{balance.toFixed(2)}</td>
+                              <td className="px-4 py-2">
+                                <span
+                                  className={cn(
+                                    "rounded-full px-2 py-0.5 text-xs font-medium",
+                                    inv.status === "paid" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                                    inv.status === "pending" && !overdue && "bg-sky-500/10 text-sky-700 dark:text-sky-400",
+                                    overdue && "bg-rose-500/10 text-rose-700 dark:text-rose-400",
+                                  )}
+                                >
+                                  {overdue ? "Overdue" : inv.status === "paid" ? "Paid" : "Pending"}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ),
+          },
+          {
+            id: "tickets",
+            label: "Tickets",
+            count: openTickets.length,
+            content: (
+              <div className="space-y-3">
+                {!tickets || tickets.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No tickets from this merchant.</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
+                          <th className="px-4 py-2 font-medium">Type</th>
+                          <th className="px-4 py-2 font-medium">Shop</th>
+                          <th className="px-4 py-2 font-medium">Department</th>
+                          <th className="px-4 py-2 font-medium">Status</th>
+                          <th className="px-4 py-2 font-medium">Opened</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tickets.map((t) => (
+                          <tr key={t.id} className="border-b last:border-0">
+                            <td className="px-4 py-2 font-medium">{t.type}</td>
+                            <td className="px-4 py-2 text-muted-foreground">{t.units?.code ?? "—"}</td>
+                            <td className="px-4 py-2 capitalize text-muted-foreground">{t.department}</td>
+                            <td className="px-4 py-2">
+                              <span
+                                className={cn(
+                                  "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+                                  t.status === "resolved" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                                  t.status === "open" && "bg-rose-500/10 text-rose-700 dark:text-rose-400",
+                                  t.status === "in_progress" && "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                                )}
+                              >
+                                {t.status.replace("_", " ")}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ),
+          },
+          {
+            id: "documents",
+            label: "Documents",
+            count: documents?.length ?? 0,
+            content: (
+              <div className="space-y-3">
+                <div className="flex justify-end">
+                  <UploadDocumentDialog merchants={[{ id: merchant.id, name: merchant.name }]} />
+                </div>
+                {!documents || documents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No documents on file.</p>
+                ) : (
+                  <ul className="divide-y rounded-lg border">
+                    {documents.map((doc) => (
+                      <li key={doc.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                        <div>
+                          <div className="font-medium">{doc.name}</div>
+                          <div className="text-muted-foreground text-xs">
+                            {DOC_TYPE_LABEL[doc.doc_type as DocType] ?? doc.doc_type} ·{" "}
+                            {new Date(doc.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <DownloadDocumentButton filePath={doc.file_path} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ),
+          },
+          {
+            id: "account",
+            label: "Account",
+            content: <AccountPanel merchantId={merchant.id} account={account} />,
+          },
+        ]}
+      />
     </div>
   );
 }
@@ -220,15 +364,6 @@ function InfoCard({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border px-4 py-3">
       <div className="text-xs tracking-wide text-muted-foreground uppercase">{label}</div>
       <div className="mt-1 text-sm font-medium">{value}</div>
-    </div>
-  );
-}
-
-function SummaryStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-lg border px-4 py-2">
-      <div className="text-xs tracking-wide text-muted-foreground uppercase">{label}</div>
-      <div className="text-lg font-semibold tabular-nums">{value}</div>
     </div>
   );
 }

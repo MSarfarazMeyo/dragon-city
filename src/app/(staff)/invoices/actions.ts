@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyMerchant } from "@/lib/notify";
 
 export type FinanceFormState = { error?: string } | null;
 
@@ -80,7 +81,21 @@ export async function createInvoice(
     return { error: lineError.message };
   }
 
-  revalidatePath("/finance");
+  // Immediate email — the cron route only reaches invoices as they
+  // approach/pass due_date (invoice_due rule); this is the "notify at
+  // creation" trigger that was missing.
+  const { data: lease } = await supabase.from("leases").select("merchant_id, units(code)").eq("id", lease_id).single();
+  if (lease?.merchant_id) {
+    const unitCode = lease.units?.code ?? "your shop";
+    await notifyMerchant(lease.merchant_id, {
+      event: "invoice_created",
+      title: `New invoice for ${unitCode}`,
+      vars: { unit_code: unitCode, due_date },
+      fallbackBody: `A new invoice has been issued for ${unitCode}, due ${due_date}.`,
+    });
+  }
+
+  revalidatePath("/invoices");
   revalidatePath("/map");
   return null;
 }
@@ -114,9 +129,19 @@ export async function recordPayment(
 
   const { data: invoice } = await supabase
     .from("invoices")
-    .select("invoice_line_items(amount), payments(amount)")
+    .select("invoice_line_items(amount), payments(amount), leases(merchant_id, units(code))")
     .eq("id", invoice_id)
     .single();
+
+  if (invoice?.leases?.merchant_id) {
+    const unitCode = invoice.leases.units?.code ?? "your shop";
+    await notifyMerchant(invoice.leases.merchant_id, {
+      event: "payment_recorded",
+      title: `Payment received for ${unitCode}`,
+      vars: { unit_code: unitCode, amount: amount.toFixed(2) },
+      fallbackBody: `A payment of ${amount.toFixed(2)} was recorded for ${unitCode}.`,
+    });
+  }
 
   if (invoice) {
     const total = invoice.invoice_line_items.reduce((s, li) => s + li.amount, 0);
@@ -129,7 +154,7 @@ export async function recordPayment(
     }
   }
 
-  revalidatePath("/finance");
+  revalidatePath("/invoices");
   revalidatePath("/map");
   return null;
 }
@@ -137,7 +162,7 @@ export async function recordPayment(
 export async function toggleLock(leaseId: string, locked: boolean) {
   const supabase = await createClient();
   await supabase.from("leases").update({ is_locked: locked }).eq("id", leaseId);
-  revalidatePath("/finance");
+  revalidatePath("/invoices");
   revalidatePath("/map");
 }
 
@@ -159,7 +184,7 @@ export async function deleteInvoice(invoiceId: string) {
   const { error } = await supabase.from("invoices").delete().eq("id", invoiceId);
   if (error) return { error: error.message };
 
-  revalidatePath("/finance");
+  revalidatePath("/invoices");
   revalidatePath("/map");
   return null;
 }
@@ -207,6 +232,6 @@ export async function uploadDocument(
   });
   if (docError) return { error: docError.message };
 
-  revalidatePath("/finance");
+  revalidatePath("/invoices");
   return null;
 }

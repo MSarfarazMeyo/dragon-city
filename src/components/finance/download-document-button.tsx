@@ -1,6 +1,6 @@
 "use client";
 
-import { getDocumentUrl } from "@/app/(staff)/finance/documents-actions";
+import { getDocumentUrl } from "@/app/(staff)/invoices/documents-actions";
 import { Button } from "@/components/ui/button";
 
 export function DownloadDocumentButton({ filePath }: { filePath: string }) {

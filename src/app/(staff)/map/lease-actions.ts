@@ -80,6 +80,12 @@ export async function createLease(
   }
 
   revalidatePath("/map");
+  // Also called from the merchant detail page's Shops tab (assign a
+  // shop directly to this merchant) — revalidate that specific page too
+  // since revalidatePath("/merchants") alone doesn't cover a dynamic
+  // [id] route.
+  revalidatePath(`/map/units/${unit_id}`);
+  revalidatePath(`/merchants/${merchantId}`);
   return null;
 }
 
@@ -92,6 +98,8 @@ export async function vacateLease(
 
   if (!lease_id) return { error: "Missing lease." };
 
+  const { data: lease } = await supabase.from("leases").select("unit_id, merchant_id").eq("id", lease_id).single();
+
   const { error } = await supabase
     .from("leases")
     .update({ status: "terminated", end_date: new Date().toISOString().slice(0, 10) })
@@ -100,6 +108,8 @@ export async function vacateLease(
   if (error) return { error: error.message };
 
   revalidatePath("/map");
+  if (lease?.unit_id) revalidatePath(`/map/units/${lease.unit_id}`);
+  if (lease?.merchant_id) revalidatePath(`/merchants/${lease.merchant_id}`);
   return null;
 }
 

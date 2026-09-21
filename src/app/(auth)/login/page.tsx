@@ -22,12 +22,23 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    setLoading(false);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
+      setLoading(false);
       setError(error.message);
+      return;
+    }
+
+    // Deactivated staff (profiles.status = 'inactive', set from the Staff
+    // page) authenticate fine against Supabase Auth itself — the block
+    // has to happen here, right after sign-in, by checking their own
+    // profile row (readable under RLS as `id = auth.uid()`).
+    const { data: profile } = await supabase.from("profiles").select("status").eq("id", data.user.id).single();
+    if (profile?.status === "inactive") {
+      await supabase.auth.signOut();
+      setLoading(false);
+      setError("This account has been deactivated. Contact an admin.");
       return;
     }
 

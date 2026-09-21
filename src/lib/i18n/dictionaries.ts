@@ -4,12 +4,12 @@ export type Dictionary = {
   nav: {
     map: string;
     merchants: string;
-    finance: string;
+    invoices: string;
     tickets: string;
     dashboards: string;
-    accounts: string;
-    leasing: string;
-    admin: string;
+    staff: string;
+    leads: string;
+    settings: string;
   };
   common: {
     save: string;
@@ -103,12 +103,12 @@ export const dictionaries: Record<Locale, Dictionary> = {
     nav: {
       map: "Map",
       merchants: "Merchants",
-      finance: "Finance",
+      invoices: "Invoices",
       tickets: "Tickets",
       dashboards: "Dashboards",
-      accounts: "Accounts",
-      leasing: "Leasing",
-      admin: "Admin",
+      staff: "Staff",
+      leads: "Leads",
+      settings: "Settings",
     },
     common: {
       save: "Save",
@@ -200,12 +200,12 @@ export const dictionaries: Record<Locale, Dictionary> = {
     nav: {
       map: "地图",
       merchants: "商户",
-      finance: "财务",
+      invoices: "发票",
       tickets: "工单",
       dashboards: "仪表盘",
-      accounts: "账户",
-      leasing: "招商",
-      admin: "管理",
+      staff: "员工",
+      leads: "招商",
+      settings: "设置",
     },
     common: {
       save: "保存",
@@ -297,12 +297,12 @@ export const dictionaries: Record<Locale, Dictionary> = {
     nav: {
       map: "الخريطة",
       merchants: "التجار",
-      finance: "المالية",
+      invoices: "الفواتير",
       tickets: "التذاكر",
       dashboards: "لوحات المعلومات",
-      accounts: "الحسابات",
-      leasing: "التأجير",
-      admin: "الإدارة",
+      staff: "الموظفون",
+      leads: "العملاء المحتملون",
+      settings: "الإعدادات",
     },
     common: {
       save: "حفظ",

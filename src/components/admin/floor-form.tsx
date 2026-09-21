@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 
-import { updateFloor, type AdminFormState } from "@/app/(staff)/admin/actions";
+import { updateFloor, type AdminFormState } from "@/app/(staff)/settings/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

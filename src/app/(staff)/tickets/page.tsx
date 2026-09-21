@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { CreateTicketDialog } from "@/components/tickets/create-ticket-dialog";
-import { TicketsBoard, type TicketRow } from "@/components/tickets/tickets-board";
+import { TicketsBoard, type TicketActivityEntry, type TicketRow } from "@/components/tickets/tickets-board";
 
 export default async function TicketsPage() {
   const supabase = await createClient();
@@ -21,6 +21,28 @@ export default async function TicketsPage() {
   const { data: units } = await supabase.from("units").select("id, code").order("code");
   const { data: merchants } = await supabase.from("merchants").select("id, name").order("name");
 
+  // "Who performed what, and when" — the activity trail that replaces a
+  // formal assignment feature (see tickets-board.tsx's Activity section).
+  const { data: auditRows } = await supabase
+    .from("audit_log")
+    .select("id, entity_id, action, diff, created_at, profiles(full_name, role)")
+    .eq("entity_type", "tickets")
+    .order("created_at", { ascending: true });
+
+  const activityByTicket = new Map<string, TicketActivityEntry[]>();
+  for (const row of auditRows ?? []) {
+    if (!row.entity_id) continue;
+    const list = activityByTicket.get(row.entity_id) ?? [];
+    list.push({
+      id: row.id,
+      action: row.action as TicketActivityEntry["action"],
+      diff: row.diff as TicketActivityEntry["diff"],
+      created_at: row.created_at,
+      actor: row.profiles,
+    });
+    activityByTicket.set(row.entity_id, list);
+  }
+
   const rows: TicketRow[] = (tickets ?? []).map((t) => ({
     id: t.id,
     department: t.department,
@@ -35,6 +57,7 @@ export default async function TicketsPage() {
     merchants: t.merchants,
     assignee: t.assignee,
     creator: t.creator,
+    activity: (activityByTicket.get(t.id) ?? []).slice().reverse(),
   }));
 
   return (
@@ -49,7 +72,7 @@ export default async function TicketsPage() {
         <CreateTicketDialog units={units ?? []} merchants={merchants ?? []} />
       </div>
 
-      <TicketsBoard tickets={rows} currentUserId={user!.id} isAdmin={profile?.role === "admin"} />
+      <TicketsBoard tickets={rows} isAdmin={profile?.role === "admin"} />
     </div>
   );
 }

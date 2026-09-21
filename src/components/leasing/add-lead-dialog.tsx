@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 
-import { createLead, type LeasingFormState } from "@/app/(staff)/leasing/actions";
+import { createLead, type LeasingFormState } from "@/app/(staff)/leads/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

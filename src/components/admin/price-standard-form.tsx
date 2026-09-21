@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { Trash2 } from "lucide-react";
 
-import { deletePriceStandard, upsertPriceStandard, type AdminFormState } from "@/app/(staff)/admin/actions";
+import { deletePriceStandard, upsertPriceStandard, type AdminFormState } from "@/app/(staff)/settings/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

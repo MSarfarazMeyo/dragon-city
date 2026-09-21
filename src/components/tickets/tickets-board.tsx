@@ -8,12 +8,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  History,
   MessageSquareText,
   RotateCcw,
   Search,
   Store,
   Trash2,
-  UserPlus,
   UserRound,
   CheckCircle2,
   Play,
@@ -21,7 +21,6 @@ import {
 
 import {
   archiveTicket,
-  assignToMe,
   deleteTicket,
   reopenTicket,
   unarchiveTicket,
@@ -37,6 +36,14 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
+export type TicketActivityEntry = {
+  id: string;
+  action: "insert" | "update" | "delete";
+  diff: Record<string, [unknown, unknown]> | null;
+  created_at: string;
+  actor: { full_name: string | null; role: string | null } | null;
+};
+
 export type TicketRow = {
   id: string;
   department: string;
@@ -51,6 +58,7 @@ export type TicketRow = {
   merchants: { name: string } | null;
   assignee: { full_name: string | null; role: string | null } | null;
   creator: { full_name: string | null; role: string | null } | null;
+  activity: TicketActivityEntry[];
 };
 
 type StatusFilter = "all" | "open" | "in_progress" | "resolved";
@@ -60,11 +68,9 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 export function TicketsBoard({
   tickets,
-  currentUserId,
   isAdmin,
 }: {
   tickets: TicketRow[];
-  currentUserId: string;
   isAdmin: boolean;
 }) {
   const [query, setQuery] = useState("");
@@ -336,7 +342,6 @@ export function TicketsBoard({
           {selected && (
             <TicketDetailPanel
               ticket={selected}
-              currentUserId={currentUserId}
               isAdmin={isAdmin}
               pending={pending}
               error={error}
@@ -352,7 +357,6 @@ export function TicketsBoard({
 
 function TicketDetailPanel({
   ticket,
-  currentUserId,
   isAdmin,
   pending,
   error,
@@ -360,17 +364,12 @@ function TicketDetailPanel({
   onAction,
 }: {
   ticket: TicketRow;
-  currentUserId: string;
   isAdmin: boolean;
   pending: boolean;
   error: string | null;
   onClose: () => void;
   onAction: (action: () => Promise<unknown>) => void;
 }) {
-  const assigneeLabel =
-    ticket.assignee?.full_name ??
-    ticket.assignee?.role ??
-    (ticket.assigned_to ? "Assigned" : "Unassigned");
   const creatorLabel = ticket.creator?.full_name ?? ticket.creator?.role ?? "Unknown";
   const statusTone =
     ticket.archived_at
@@ -407,7 +406,6 @@ function TicketDetailPanel({
         <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
           <MetaRow icon={Store} label="Shop" value={ticket.units?.code ?? "Not linked"} />
           <MetaRow icon={Building2} label="Merchant" value={ticket.merchants?.name ?? "Not linked"} />
-          <MetaRow icon={UserRound} label="Assignee" value={assigneeLabel} emphasize={!ticket.assigned_to} />
           <MetaRow icon={UserRound} label="Created by" value={creatorLabel} last />
         </section>
 
@@ -434,9 +432,6 @@ function TicketDetailPanel({
               detail={new Date(ticket.created_at).toLocaleString()}
               active
             />
-            {ticket.assigned_to && (
-              <TimelineItem title="Assigned" detail={assigneeLabel} />
-            )}
             {ticket.resolved_at && (
               <TimelineItem title="Resolved" detail={new Date(ticket.resolved_at).toLocaleString()} />
             )}
@@ -444,6 +439,29 @@ function TicketDetailPanel({
               <TimelineItem title="Archived" detail={new Date(ticket.archived_at).toLocaleString()} />
             )}
           </ol>
+        </section>
+
+        <section className="rounded-2xl border bg-card p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <History className="size-3.5" />
+            Activity
+          </div>
+          {ticket.activity.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No changes recorded yet.</p>
+          ) : (
+            <ol className="space-y-2.5">
+              {ticket.activity.map((entry) => (
+                <li key={entry.id} className="text-sm">
+                  <span className="font-medium">{entry.actor?.full_name ?? entry.actor?.role ?? "System"}</span>{" "}
+                  <span className="text-muted-foreground">
+                    {entry.action === "insert" ? "created this ticket" : describeTicketDiff(entry.diff)}
+                    {" · "}
+                    {new Date(entry.created_at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
 
         {error && (
@@ -455,24 +473,8 @@ function TicketDetailPanel({
 
       <div className="sticky bottom-0 space-y-2 border-t bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
         {!ticket.archived_at && ticket.status !== "resolved" && (
-          <div className="grid grid-cols-2 gap-2">
-            {ticket.assigned_to !== currentUserId ? (
-              <Button
-                disabled={pending}
-                variant="outline"
-                className="h-10"
-                onClick={() => onAction(() => assignToMe(ticket.id))}
-              >
-                <UserPlus className="size-4" />
-                Assign
-              </Button>
-            ) : (
-              <Button disabled variant="outline" className="h-10 opacity-60">
-                <UserRound className="size-4" />
-                Assigned
-              </Button>
-            )}
-            {ticket.status === "open" ? (
+          <div className={cn("grid gap-2", ticket.status === "open" && "grid-cols-2")}>
+            {ticket.status === "open" && (
               <Button
                 disabled={pending}
                 variant="outline"
@@ -482,26 +484,11 @@ function TicketDetailPanel({
                 <Play className="size-4" />
                 Start
               </Button>
-            ) : (
-              <Button
-                disabled={pending}
-                className="h-10"
-                onClick={() => onAction(() => updateStatus(ticket.id, "resolved"))}
-              >
-                <CheckCircle2 className="size-4" />
-                Resolve
-              </Button>
             )}
-            {ticket.status === "open" && (
-              <Button
-                disabled={pending}
-                className="col-span-2 h-10"
-                onClick={() => onAction(() => updateStatus(ticket.id, "resolved"))}
-              >
-                <CheckCircle2 className="size-4" />
-                Resolve ticket
-              </Button>
-            )}
+            <Button disabled={pending} className="h-10" onClick={() => onAction(() => updateStatus(ticket.id, "resolved"))}>
+              <CheckCircle2 className="size-4" />
+              Resolve
+            </Button>
           </div>
         )}
 
@@ -707,4 +694,20 @@ function formatWhen(iso: string) {
   const hours = Math.floor(mins / 60);
   if (hours < 48) return `${hours}h ago`;
   return d.toLocaleDateString();
+}
+
+// Turns an audit_log row's {field: [old, new]} diff into one readable
+// clause — this is the "who performed operation on it, track status"
+// trail requested in place of a formal assignment feature.
+// assigned_to is excluded on purpose — assignment is a hidden schema
+// field for now (see Sprint 5), so a raw UUID has no business showing
+// up in an activity trail meant for non-technical readers.
+const HIDDEN_DIFF_FIELDS = new Set(["resolved_at", "archived_at", "assigned_to"]);
+
+function describeTicketDiff(diff: Record<string, [unknown, unknown]> | null) {
+  if (!diff) return "made a change";
+  const parts = Object.entries(diff)
+    .filter(([field]) => !HIDDEN_DIFF_FIELDS.has(field))
+    .map(([field, [, next]]) => `${field.replace(/_/g, " ")} → ${next ?? "—"}`);
+  return parts.length > 0 ? `changed ${parts.join(", ")}` : "made a change";
 }

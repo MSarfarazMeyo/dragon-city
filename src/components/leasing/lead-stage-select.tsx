@@ -1,6 +1,6 @@
 "use client";
 
-import { updateLeadStage, type LeadStage } from "@/app/(staff)/leasing/actions";
+import { updateLeadStage, type LeadStage } from "@/app/(staff)/leads/actions";
 
 const STAGES: { value: LeadStage; label: string }[] = [
   { value: "inquiry", label: "Inquiry" },

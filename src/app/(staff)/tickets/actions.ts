@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { notifyInApp } from "@/lib/notifications";
+import { notifyMerchant, notifyNow } from "@/lib/notify";
 
 export type TicketFormState = { error?: string } | null;
 
@@ -26,16 +26,35 @@ export async function createTicket(
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { error } = await supabase.from("tickets").insert({
-    unit_id,
-    merchant_id,
-    department,
-    type,
-    description,
-    created_by: user?.id,
-  });
+  const { data: ticket, error } = await supabase
+    .from("tickets")
+    .insert({
+      unit_id,
+      merchant_id,
+      department,
+      type,
+      description,
+      created_by: user?.id,
+    })
+    .select("id, units(code)")
+    .single();
 
   if (error) return { error: error.message };
+
+  // A staff member opening a ticket on a merchant's behalf — tell the
+  // merchant. (The reverse direction — a merchant opening a ticket —
+  // is handled in the portal's own submitTicket action, since that's
+  // a separate entry point with its own department-routing needs.)
+  if (merchant_id) {
+    const unitCode = ticket.units?.code ?? "your shop";
+    await notifyMerchant(merchant_id, {
+      event: "ticket_created",
+      title: `New ticket for ${unitCode}`,
+      vars: { unit_code: unitCode, ticket_type: type },
+      fallbackBody: `New ${type} ticket for ${unitCode}.`,
+      relatedTicketId: ticket.id,
+    });
+  }
 
   revalidatePath("/tickets");
   return null;
@@ -70,15 +89,15 @@ export async function updateStatus(ticketId: string, status: "in_progress" | "re
     .eq("id", ticketId);
 
   if (status === "resolved" && ticket?.created_by) {
-    const shopCode = ticket.units?.code ? ` (${ticket.units.code})` : "";
-    await notifyInApp(
-      supabase,
-      ticket.created_by,
-      "ticket_resolved",
-      `Ticket resolved: ${ticket.type}${shopCode}`,
-      undefined,
-      ticketId,
-    );
+    const unitCode = ticket.units?.code ?? "your shop";
+    await notifyNow({
+      recipientProfileId: ticket.created_by,
+      event: "ticket_resolved",
+      title: `Ticket resolved: ${ticket.type} (${unitCode})`,
+      vars: { unit_code: unitCode, ticket_type: ticket.type },
+      fallbackBody: `Ticket resolved: ${ticket.type} (${unitCode}).`,
+      relatedTicketId: ticketId,
+    });
   }
 
   revalidatePath("/tickets");

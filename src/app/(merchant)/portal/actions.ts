@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyStaffRole } from "@/lib/notify";
 
 export type PortalFormState = { error?: string } | null;
 
@@ -28,16 +29,32 @@ export async function submitTicket(
     return { error: "Department and type are required." };
   }
 
-  const { error } = await supabase.from("tickets").insert({
-    unit_id,
-    merchant_id: profile.merchant_id,
-    department,
-    type,
-    description,
-    created_by: user.id,
-  });
+  const { data: ticket, error } = await supabase
+    .from("tickets")
+    .insert({
+      unit_id,
+      merchant_id: profile.merchant_id,
+      department,
+      type,
+      description,
+      created_by: user.id,
+    })
+    .select("id, units(code)")
+    .single();
 
   if (error) return { error: error.message };
+
+  // A merchant opening a ticket — route the notification to whichever
+  // staff department they picked, the same role-matching the cron
+  // route uses for invoice_due/lease_expiring.
+  const unitCode = ticket.units?.code ?? "a shop";
+  await notifyStaffRole(department, {
+    event: "ticket_created",
+    title: `New ticket for ${unitCode}`,
+    vars: { unit_code: unitCode, ticket_type: type },
+    fallbackBody: `New ${type} ticket for ${unitCode}.`,
+    relatedTicketId: ticket.id,
+  });
 
   revalidatePath("/portal");
   return null;

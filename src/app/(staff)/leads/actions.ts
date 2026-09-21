@@ -37,7 +37,7 @@ export async function createLead(
 
   if (error) return { error: error.message };
 
-  revalidatePath("/leasing");
+  revalidatePath("/leads");
   return null;
 }
 
@@ -46,7 +46,7 @@ export async function updateLeadStage(leadId: string, stage: LeadStage) {
 
   const supabase = await createClient();
   await supabase.from("leasing_leads").update({ stage }).eq("id", leadId);
-  revalidatePath("/leasing");
+  revalidatePath("/leads");
 }
 
 export async function convertLeadToMerchant(
@@ -99,7 +99,7 @@ export async function convertLeadToMerchant(
 
   if (leadError) return { error: leadError.message };
 
-  revalidatePath("/leasing");
+  revalidatePath("/leads");
   revalidatePath("/merchants");
   return null;
 }

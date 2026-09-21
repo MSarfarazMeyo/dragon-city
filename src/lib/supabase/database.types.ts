@@ -448,6 +448,7 @@ export type Database = {
           cr_number: string | null
           created_at: string
           id: string
+          logo_path: string | null
           name: string
           notes: string | null
           type: string
@@ -460,6 +461,7 @@ export type Database = {
           cr_number?: string | null
           created_at?: string
           id?: string
+          logo_path?: string | null
           name: string
           notes?: string | null
           type?: string
@@ -472,6 +474,7 @@ export type Database = {
           cr_number?: string | null
           created_at?: string
           id?: string
+          logo_path?: string | null
           name?: string
           notes?: string | null
           type?: string
@@ -621,28 +624,34 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_path: string | null
           created_at: string
           full_name: string | null
           id: string
           locale: string
           merchant_id: string | null
           role: string
+          status: string
         }
         Insert: {
+          avatar_path?: string | null
           created_at?: string
           full_name?: string | null
           id: string
           locale?: string
           merchant_id?: string | null
           role: string
+          status?: string
         }
         Update: {
+          avatar_path?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
           locale?: string
           merchant_id?: string | null
           role?: string
+          status?: string
         }
         Relationships: [
           {

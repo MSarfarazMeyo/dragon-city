@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { UserPlus } from "lucide-react";
 
-import { convertLeadToMerchant, type LeasingFormState } from "@/app/(staff)/leasing/actions";
+import { convertLeadToMerchant, type LeasingFormState } from "@/app/(staff)/leads/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

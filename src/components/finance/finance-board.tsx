@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState, useTransition, type ComponentType } from "react";
+import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   Filter,
   Lock,
   LockOpen,
@@ -14,7 +16,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { deleteInvoice, toggleLock } from "@/app/(staff)/finance/actions";
+import { deleteInvoice, toggleLock } from "@/app/(staff)/invoices/actions";
 import { RecordPaymentDialog } from "@/components/finance/record-payment-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -406,11 +408,18 @@ function InvoiceDetailPanel({
     <>
       <div className={cn("border-b bg-gradient-to-b px-5 pb-4 pt-5", tone)}>
         <div className="pr-10">
-          <div className="mb-2 flex flex-wrap gap-1.5">
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
             <StatusBadge overdue={invoice.overdue} status={invoice.status} locked={invoice.is_locked} />
             <Badge variant="secondary" className="font-mono">
               {invoice.unit_code}
             </Badge>
+            <Link
+              href={`/invoices/${invoice.id}`}
+              className="ml-auto flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              Full details
+              <ExternalLink className="size-3" />
+            </Link>
           </div>
           <h2 className="text-lg font-semibold tracking-tight">{invoice.merchant_name}</h2>
           <p className="mt-1 text-xs text-muted-foreground">

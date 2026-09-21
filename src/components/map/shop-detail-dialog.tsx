@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 
 import {
   createLease,
@@ -86,7 +88,16 @@ function ShopDetailBody({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{unit.code}</DialogTitle>
+        <div className="flex items-center justify-between gap-3">
+          <DialogTitle>{unit.code}</DialogTitle>
+          <Link
+            href={`/map/units/${unit.id}`}
+            className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            Full details
+            <ExternalLink className="size-3" />
+          </Link>
+        </div>
         <DialogDescription>
           {[unit.category, unit.area_sqm ? `${unit.area_sqm} m²` : null].filter(Boolean).join(" · ") || "No details set"}
         </DialogDescription>

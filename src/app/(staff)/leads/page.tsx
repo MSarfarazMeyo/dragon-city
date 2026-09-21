@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AddLeadDialog } from "@/components/leasing/add-lead-dialog";
 import { ConvertLeadDialog } from "@/components/leasing/convert-lead-dialog";
 import { LeadStageSelect } from "@/components/leasing/lead-stage-select";
-import type { LeadStage } from "@/app/(staff)/leasing/actions";
+import type { LeadStage } from "@/app/(staff)/leads/actions";
 
 const STAGES: { key: LeadStage; label: string }[] = [
   { key: "inquiry", label: "Inquiry" },
@@ -35,7 +35,7 @@ export default async function LeasingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Leasing pipeline</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
           <p className="text-muted-foreground text-sm">Track prospects from first inquiry to signed lease.</p>
         </div>
         <AddLeadDialog />

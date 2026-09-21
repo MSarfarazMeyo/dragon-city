@@ -5,10 +5,13 @@ import {
   CircleDollarSign,
   Download,
   AlertTriangle,
+  Handshake,
   KeyRound,
   Percent,
   Store,
+  Ticket,
   TrendingUp,
+  UsersRound,
   Wallet,
 } from "lucide-react";
 
@@ -93,6 +96,25 @@ export default async function DashboardsPage() {
     .select("id", { count: "exact", head: true })
     .eq("status", "terminated")
     .gte("end_date", ago90Days);
+
+  // Sprint 7: surface merchants/staff/leads/tickets here too — before
+  // this, the dashboard only reflected occupancy and finance, nothing
+  // about the rest of the system built in the upgrade.
+  const { count: merchantCount } = await supabase.from("merchants").select("id", { count: "exact", head: true });
+  const { count: staffCount } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .neq("role", "merchant")
+    .eq("status", "active");
+  const { count: openLeadCount } = await supabase
+    .from("leasing_leads")
+    .select("id", { count: "exact", head: true })
+    .in("stage", ["inquiry", "negotiation"]);
+  const { count: openTicketCount } = await supabase
+    .from("tickets")
+    .select("id", { count: "exact", head: true })
+    .neq("status", "resolved")
+    .is("archived_at", null);
 
   const auditLog = isAdmin
     ? (
@@ -238,6 +260,13 @@ export default async function DashboardsPage() {
         <MiniStat icon={Building2} label="Total shops" value={total} />
         <MiniStat icon={TrendingUp} label="Expiring in 30 days" value={expiringCount ?? 0} />
         <MiniStat icon={KeyRound} label="Ended last 90 days" value={endedRecentlyCount ?? 0} />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <MiniStat icon={Store} label="Merchants" value={merchantCount ?? 0} href="/merchants" />
+        <MiniStat icon={UsersRound} label="Active staff" value={staffCount ?? 0} href="/staff" />
+        <MiniStat icon={Handshake} label="Open leads" value={openLeadCount ?? 0} href="/leads" />
+        <MiniStat icon={Ticket} label="Open tickets" value={openTicketCount ?? 0} href="/tickets" />
       </div>
 
       <Card className="shadow-sm">
@@ -418,22 +447,45 @@ function MiniStat({
   icon: Icon,
   label,
   value,
+  href,
 }: {
   icon: ComponentType<{ className?: string }>;
   label: string;
   value: number;
+  href?: string;
 }) {
   return (
-    <Card className="shadow-sm">
+    <Card className={cn("shadow-sm", href && "transition-colors hover:bg-muted/40")}>
       <CardContent className="flex items-center gap-3 py-4">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-secondary">
-          <Icon className="size-4" />
-        </div>
-        <div>
-          <div className="text-xs text-muted-foreground">{label}</div>
-          <div className="text-xl font-semibold tabular-nums">{value}</div>
-        </div>
+        {href ? (
+          <Link href={href} className="flex items-center gap-3">
+            <MiniStatIcon icon={Icon} />
+            <MiniStatBody label={label} value={value} />
+          </Link>
+        ) : (
+          <>
+            <MiniStatIcon icon={Icon} />
+            <MiniStatBody label={label} value={value} />
+          </>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function MiniStatIcon({ icon: Icon }: { icon: ComponentType<{ className?: string }> }) {
+  return (
+    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+      <Icon className="size-4" />
+    </div>
+  );
+}
+
+function MiniStatBody({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-xl font-semibold tabular-nums">{value}</div>
+    </div>
   );
 }

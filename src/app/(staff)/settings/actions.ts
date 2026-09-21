@@ -42,7 +42,7 @@ export async function upsertPriceStandard(
     if (error) return { error: error.message };
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/settings");
   return null;
 }
 
@@ -51,7 +51,7 @@ export async function deletePriceStandard(id: string) {
 
   const supabase = await createClient();
   await supabase.from("price_standards").delete().eq("id", id);
-  revalidatePath("/admin");
+  revalidatePath("/settings");
 }
 
 export async function updateNotificationRule(
@@ -90,7 +90,7 @@ export async function updateNotificationRule(
 
   if (error) return { error: error.message };
 
-  revalidatePath("/admin");
+  revalidatePath("/settings");
   return null;
 }
 
@@ -116,7 +116,7 @@ export async function updateFloor(
 
   if (error) return { error: error.message };
 
-  revalidatePath("/admin");
+  revalidatePath("/settings");
   revalidatePath("/map");
   return null;
 }
