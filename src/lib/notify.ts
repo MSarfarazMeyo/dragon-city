@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
+import { renderGenericEmail } from "@/lib/email-templates";
 import { notifyInApp, applyTemplateVars, resolveNotificationTemplate } from "@/lib/notifications";
 
 // Same delivery shape as the cron route's deliver()/getRecipients()
@@ -15,6 +16,7 @@ export async function notifyNow({
   vars,
   fallbackBody,
   relatedTicketId,
+  html,
 }: {
   recipientProfileId: string;
   event: string;
@@ -22,6 +24,11 @@ export async function notifyNow({
   vars: Record<string, string>;
   fallbackBody: string;
   relatedTicketId?: string;
+  /** Pre-rendered branded HTML (see src/lib/email-templates.ts) for a richer
+   * email than the plain notification_rules template — e.g. invoice emails
+   * built with renderInvoiceEmail(). Falls back to a generic branded wrapper
+   * around the resolved text body when omitted. */
+  html?: string;
 }) {
   const supabase = createAdminClient();
 
@@ -47,7 +54,7 @@ export async function notifyNow({
   const email = userRes?.user?.email;
   if (!email) return;
 
-  const sent = await sendEmail(email, title, body);
+  const sent = await sendEmail(email, title, body, html ?? renderGenericEmail(title, body));
   await supabase.from("notifications").insert({
     recipient_id: recipientProfileId,
     channel: "email",

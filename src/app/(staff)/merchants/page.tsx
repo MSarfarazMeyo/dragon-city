@@ -5,6 +5,9 @@ import { Building2, Download, Filter, KeyRound, Store, UserRound } from "lucide-
 import { createClient } from "@/lib/supabase/server";
 import { getAvatarUrl } from "@/lib/avatar-actions";
 import { parsePageParams, pageCount } from "@/lib/pagination";
+import { getViewerLocale } from "@/lib/locale";
+import { dictionaries } from "@/lib/i18n/dictionaries";
+import { applyTemplateVars } from "@/lib/notification-template";
 import { AddMerchantDialog } from "@/components/merchants/add-merchant-dialog";
 import { ImportMerchantsDialog } from "@/components/merchants/import-merchants-dialog";
 import { MerchantSearch } from "@/components/merchants/merchant-search";
@@ -23,6 +26,8 @@ export default async function MerchantsPage({
   const type = typeof params.type === "string" ? params.type : "all";
   const { page, pageSize, from, to } = parsePageParams(params);
   const supabase = await createClient();
+  const locale = await getViewerLocale(supabase);
+  const t = dictionaries[locale].merchants;
 
   let query = supabase
     .from("merchants")
@@ -62,17 +67,23 @@ export default async function MerchantsPage({
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Merchants</h1>
-          <p className="text-sm text-muted-foreground">Merchant records — link a shop from the map to create a lease.</p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t.title}</h1>
+          <p className="text-sm text-muted-foreground">{t.subtitle}</p>
         </div>
         <AddMerchantDialog />
       </div>
 
       <StatCardRow>
-        <StatCard label="Total merchants" value={totalCount ?? 0} icon={Store} tone="teal" />
-        <StatCard label="Companies" value={companyCount ?? 0} icon={Building2} tone="sky" />
-        <StatCard label="Individuals" value={individualCount ?? 0} icon={UserRound} tone="violet" />
-        <StatCard label="Active shops" value={activeLeaseCount ?? 0} icon={KeyRound} tone="amber" hint={`${loginCount ?? 0} logins`} />
+        <StatCard label={t.statTotal} value={totalCount ?? 0} icon={Store} tone="teal" />
+        <StatCard label={t.statCompanies} value={companyCount ?? 0} icon={Building2} tone="sky" />
+        <StatCard label={t.statIndividuals} value={individualCount ?? 0} icon={UserRound} tone="violet" />
+        <StatCard
+          label={t.statActiveShops}
+          value={activeLeaseCount ?? 0}
+          icon={KeyRound}
+          tone="amber"
+          hint={applyTemplateVars(t.statLogins, { n: String(loginCount ?? 0) })}
+        />
       </StatCardRow>
 
       <Card className="shadow-sm">
@@ -85,7 +96,7 @@ export default async function MerchantsPage({
               <Button variant="outline" className="h-11" asChild>
                 <a href="/api/export?entity=merchants">
                   <Download className="size-4" />
-                  Export CSV
+                  {t.exportCsv}
                 </a>
               </Button>
               <ImportMerchantsDialog />
@@ -94,8 +105,8 @@ export default async function MerchantsPage({
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Filter className="size-3.5" />
             {!merchants || merchants.length === 0
-              ? "No merchants match these filters"
-              : `Showing ${from + 1}–${from + merchants.length} of ${count ?? 0} merchants`}
+              ? t.noMatchFilters
+              : applyTemplateVars(t.showing, { from: String(from + 1), to: String(from + merchants.length), count: String(count ?? 0) })}
           </div>
         </CardContent>
       </Card>
@@ -104,23 +115,23 @@ export default async function MerchantsPage({
         <Card className="border-dashed shadow-none">
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
             {hasFilters ? (
-              "No merchants match your filters."
+              t.noMatchFiltersLong
             ) : (
               <>
-                No merchants yet. Click <span className="font-medium text-foreground">Add merchant</span> to start.
+                {t.emptyPrefix} <span className="font-medium text-foreground">{t.addMerchant}</span> {t.emptySuffix}
               </>
             )}
           </CardContent>
         </Card>
       ) : (
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Type</th>
-                <th className="px-4 py-3 font-medium">Contact</th>
-                <th className="px-4 py-3 font-medium">Active shops</th>
+                <th className="px-4 py-3 font-medium">{t.colName}</th>
+                <th className="px-4 py-3 font-medium">{t.colType}</th>
+                <th className="px-4 py-3 font-medium">{t.colContact}</th>
+                <th className="px-4 py-3 font-medium">{t.colActiveShops}</th>
               </tr>
             </thead>
             <tbody>
@@ -130,6 +141,7 @@ export default async function MerchantsPage({
                   .map((l) => l.units?.code)
                   .filter(Boolean);
                 const logoUrl = logoUrls.get(m.id);
+                const typeLabel = m.type === "company" ? t.typeCompany : t.typeIndividual;
                 return (
                   <tr key={m.id} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="px-4 py-3 font-medium">
@@ -145,14 +157,26 @@ export default async function MerchantsPage({
                         {m.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 capitalize text-muted-foreground">{m.type}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{typeLabel}</td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {m.contact_name || m.contact_phone
                         ? [m.contact_name, m.contact_phone].filter(Boolean).join(" · ")
                         : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      {activeShops.length > 0 ? activeShops.join(", ") : <span className="text-muted-foreground">None</span>}
+                      {activeShops.length === 0 ? (
+                        <span className="text-muted-foreground">{t.none}</span>
+                      ) : (
+                        <span title={activeShops.join(", ")}>
+                          {activeShops.slice(0, 3).join(", ")}
+                          {activeShops.length > 3 && (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              {applyTemplateVars(t.more, { n: String(activeShops.length - 3) })}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );

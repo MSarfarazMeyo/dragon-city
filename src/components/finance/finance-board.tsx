@@ -18,6 +18,7 @@ import {
 
 import { deleteInvoice, toggleLock } from "@/app/(staff)/invoices/actions";
 import { RecordPaymentDialog } from "@/components/finance/record-payment-dialog";
+import { ResendInvoiceEmail } from "@/components/finance/resend-invoice-email";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -502,6 +503,9 @@ function InvoiceDetailPanel({
             {invoice.is_locked ? <LockOpen className="size-4" /> : <Lock className="size-4" />}
             {invoice.is_locked ? "Unlock" : "Lock"}
           </Button>
+          <div className="flex-1" onClick={(e) => e.stopPropagation()}>
+            <ResendInvoiceEmail invoiceId={invoice.id} fullWidth />
+          </div>
           {canDelete && (
             <Button type="button" variant="destructive" size="icon" className="size-10" disabled={pending} onClick={onRequestDelete} aria-label="Delete invoice">
               <Trash2 className="size-4" />

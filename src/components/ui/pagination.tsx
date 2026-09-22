@@ -3,6 +3,8 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { useI18n } from "@/lib/i18n/context";
+import { applyTemplateVars } from "@/lib/notification-template";
 import { Button } from "@/components/ui/button";
 
 // Pairs with src/lib/pagination.ts's parsePageParams/pageCount. Preserves
@@ -12,6 +14,7 @@ import { Button } from "@/components/ui/button";
 export function Pagination({ page, totalPages }: { page: number; totalPages: number }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
 
   function go(nextPage: number) {
     const params = new URLSearchParams(searchParams.toString());
@@ -25,15 +28,15 @@ export function Pagination({ page, totalPages }: { page: number; totalPages: num
   return (
     <div className="flex items-center justify-between gap-3 pt-2">
       <p className="text-xs text-muted-foreground">
-        Page {page} of {totalPages}
+        {applyTemplateVars(t.common.pageOf, { page: String(page), total: String(totalPages) })}
       </p>
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => go(page - 1)}>
           <ChevronLeft className="size-4" />
-          Previous
+          {t.common.previous}
         </Button>
         <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => go(page + 1)}>
-          Next
+          {t.common.next}
           <ChevronRight className="size-4" />
         </Button>
       </div>

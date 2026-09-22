@@ -2,6 +2,8 @@
 // the operations dashboard so the two can never quietly disagree about
 // what "overdue" or "expiring" means.
 
+import { dictionaries, type Locale } from "@/lib/i18n/dictionaries";
+
 export type UnitLease = {
   billing_status: string;
   end_date: string | null;
@@ -54,26 +56,24 @@ export function displayStatus(unit: DisplayStatusUnit): DisplayStatus {
   return unit.property_status;
 }
 
-export const STATUS_LABEL: Record<ShopStatus, string> = {
-  free: "Free",
-  occupied: "Occupied",
-  expiring: "Expiring",
-  fit_out: "Fit-out",
-  on_hold: "On hold",
-  overdue: "Overdue",
-};
+// English fallbacks — kept for callers that don't have a locale handy
+// (e.g. building the set of option `key`s for a <select>). Anywhere a
+// label is actually shown to a user, prefer statusLabel()/
+// displayStatusLabel() below with the viewer's locale instead.
+export const STATUS_LABEL: Record<ShopStatus, string> = dictionaries.en.statuses as Record<ShopStatus, string>;
 
-export const PROPERTY_STATUS_LABEL: Record<PropertyStatus, string> = {
-  normal: "Normal",
-  inventory: "Inventory",
-  absconded: "Absconded",
-  moved_out: "Moved out",
-  showroom: "Showroom",
-  holding: "Holding",
-  follow_up: "Follow up",
-  unknown: "Unknown",
-  empty: "Empty",
-};
+export const PROPERTY_STATUS_LABEL: Record<PropertyStatus, string> = dictionaries.en.statuses as Record<
+  PropertyStatus,
+  string
+>;
+
+export function statusLabel(status: ShopStatus, locale: Locale = "en"): string {
+  return dictionaries[locale].statuses[status];
+}
+
+export function propertyStatusLabel(status: PropertyStatus, locale: Locale = "en"): string {
+  return dictionaries[locale].statuses[status];
+}
 
 export const STATUS_COLOR: Record<ShopStatus, string> = {
   free: "#10b981",
@@ -96,9 +96,8 @@ export const PROPERTY_STATUS_COLOR: Record<PropertyStatus, string> = {
   empty: "#10b981",
 };
 
-export function displayStatusLabel(status: DisplayStatus): string {
-  if (status in STATUS_LABEL) return STATUS_LABEL[status as ShopStatus];
-  return PROPERTY_STATUS_LABEL[status as PropertyStatus];
+export function displayStatusLabel(status: DisplayStatus, locale: Locale = "en"): string {
+  return dictionaries[locale].statuses[status];
 }
 
 export function displayStatusColor(status: DisplayStatus): string {

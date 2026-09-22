@@ -76,19 +76,24 @@ export function MapWorkspace({ floor, units, zones, merchants, defaultView = "pl
           <p className="mt-0.5 text-sm text-muted-foreground">Shops, occupancy, and overdue at a glance</p>
         </div>
         {hasPlan && (
-          <div className="inline-flex rounded-xl border bg-card p-1 shadow-sm">
-            <ViewToggle
-              label={t.map.planView}
-              icon={<MapIcon className="size-3.5" />}
-              active={viewMode === "plan"}
-              onClick={() => setViewMode("plan")}
-            />
-            <ViewToggle
-              label={t.map.gridView}
-              icon={<LayoutGrid className="size-3.5" />}
-              active={viewMode === "grid"}
-              onClick={() => setViewMode("grid")}
-            />
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="inline-flex rounded-xl border bg-card p-1 shadow-sm">
+              <ViewToggle
+                label={t.map.planView}
+                icon={<MapIcon className="size-3.5" />}
+                active={viewMode === "plan"}
+                onClick={() => setViewMode("plan")}
+              />
+              <ViewToggle
+                label={t.map.gridView}
+                icon={<LayoutGrid className="size-3.5" />}
+                active={viewMode === "grid"}
+                onClick={() => setViewMode("grid")}
+              />
+            </div>
+            <p className="max-w-xs text-end text-xs text-muted-foreground">
+              {viewMode === "plan" ? t.map.planViewHint : t.map.gridViewHint}
+            </p>
           </div>
         )}
       </div>

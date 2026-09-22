@@ -5,7 +5,8 @@ import { Lock, Minus, Plus, RotateCcw } from "lucide-react";
 
 import { AddShopDialog } from "@/components/map/add-shop-dialog";
 import { ShopDetailDialog, type ShopDetailUnit } from "@/components/map/shop-detail-dialog";
-import { statusOf as computeStatus, STATUS_LABEL, type ShopStatus, type UnitLease } from "@/lib/shop-status";
+import { statusOf as computeStatus, statusLabel, STATUS_LABEL, type ShopStatus, type UnitLease } from "@/lib/shop-status";
+import { useI18n } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 export type MapUnit = {
@@ -54,6 +55,7 @@ export function MapGrid({
   merchants: { id: string; name: string }[];
   onUnitSelect?: (unit: MapUnit) => void;
 }) {
+  const { t, locale } = useI18n();
   const [scale, setScale] = useState(1);
   const [filter, setFilter] = useState<Status | "all">("all");
   const [selected, setSelected] = useState<ShopDetailUnit | null>(null);
@@ -87,13 +89,13 @@ export function MapGrid({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card/80 p-3 shadow-sm backdrop-blur-sm">
         <div className="flex flex-wrap gap-2">
-          <Stat label="Total" value={allUnits.length} />
-          <Stat label="Free" value={counts.free} tone="free" />
-          <Stat label="Occupied" value={counts.occupied} tone="occupied" />
-          {counts.overdue > 0 && <Stat label="Overdue" value={counts.overdue} tone="overdue" />}
-          {counts.expiring > 0 && <Stat label="Expiring" value={counts.expiring} tone="expiring" />}
-          {counts.fit_out > 0 && <Stat label="Fit-out" value={counts.fit_out} tone="fit_out" />}
-          {counts.on_hold > 0 && <Stat label="On hold" value={counts.on_hold} tone="on_hold" />}
+          <Stat label={t.map.total} value={allUnits.length} />
+          <Stat label={statusLabel("free", locale)} value={counts.free} tone="free" />
+          <Stat label={statusLabel("occupied", locale)} value={counts.occupied} tone="occupied" />
+          {counts.overdue > 0 && <Stat label={statusLabel("overdue", locale)} value={counts.overdue} tone="overdue" />}
+          {counts.expiring > 0 && <Stat label={statusLabel("expiring", locale)} value={counts.expiring} tone="expiring" />}
+          {counts.fit_out > 0 && <Stat label={statusLabel("fit_out", locale)} value={counts.fit_out} tone="fit_out" />}
+          {counts.on_hold > 0 && <Stat label={statusLabel("on_hold", locale)} value={counts.on_hold} tone="on_hold" />}
         </div>
         <div className="flex items-center gap-2">
           <div className="flex overflow-hidden rounded-xl border bg-background">
@@ -127,13 +129,13 @@ export function MapGrid({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        <FilterChip label="All" active={filter === "all"} onClick={() => setFilter("all")} />
+        <FilterChip label={t.common.all} active={filter === "all"} onClick={() => setFilter("all")} />
         {(Object.keys(STATUS_LABEL) as Status[])
           .filter((s) => counts[s] > 0)
           .map((s) => (
             <FilterChip
               key={s}
-              label={STATUS_LABEL[s]}
+              label={statusLabel(s, locale)}
               tone={s}
               active={filter === s}
               onClick={() => setFilter(s)}

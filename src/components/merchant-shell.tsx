@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, LogOut, Store, Ticket, Wallet } from "lucide-react";
 
+import { BrandMark } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/lib/i18n/context";
 import { createClient } from "@/lib/supabase/client";
@@ -46,9 +47,7 @@ export function MerchantShell({
       >
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
-              DC
-            </div>
+            <BrandMark size={32} className="shrink-0 rounded-lg" />
             <div className="min-w-0">
               <div className="text-sm font-semibold tracking-tight">Dragon City</div>
               <div className="truncate text-xs text-muted-foreground">{title ?? t.portal.title}</div>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { notifyStaffRole } from "@/lib/notify";
+import { renderTicketEmail } from "@/lib/email-templates";
 
 export type PortalFormState = { error?: string } | null;
 
@@ -54,6 +55,15 @@ export async function submitTicket(
     vars: { unit_code: unitCode, ticket_type: type },
     fallbackBody: `New ${type} ticket for ${unitCode}.`,
     relatedTicketId: ticket.id,
+    html: renderTicketEmail({
+      headline: "New ticket submitted",
+      introText: "A merchant submitted a new ticket through the portal.",
+      unitCode,
+      ticketType: type,
+      department,
+      description,
+      status: "open",
+    }),
   });
 
   revalidatePath("/portal");

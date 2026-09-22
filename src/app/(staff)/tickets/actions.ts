@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { notifyMerchant, notifyNow } from "@/lib/notify";
+import { renderTicketEmail } from "@/lib/email-templates";
 
 export type TicketFormState = { error?: string } | null;
 
@@ -53,6 +54,15 @@ export async function createTicket(
       vars: { unit_code: unitCode, ticket_type: type },
       fallbackBody: `New ${type} ticket for ${unitCode}.`,
       relatedTicketId: ticket.id,
+      html: renderTicketEmail({
+        headline: "New ticket opened",
+        introText: "A new ticket has been opened for your shop by our team.",
+        unitCode,
+        ticketType: type,
+        department,
+        description,
+        status: "open",
+      }),
     });
   }
 
@@ -76,7 +86,7 @@ export async function updateStatus(ticketId: string, status: "in_progress" | "re
 
   const { data: ticket } = await supabase
     .from("tickets")
-    .select("created_by, merchant_id, type, unit_id, units(code)")
+    .select("created_by, merchant_id, type, department, description, unit_id, units(code)")
     .eq("id", ticketId)
     .single();
 
@@ -97,6 +107,15 @@ export async function updateStatus(ticketId: string, status: "in_progress" | "re
       vars: { unit_code: unitCode, ticket_type: ticket.type },
       fallbackBody: `Ticket resolved: ${ticket.type} (${unitCode}).`,
       relatedTicketId: ticketId,
+      html: renderTicketEmail({
+        headline: "Ticket resolved",
+        introText: "This ticket has been marked resolved by our team.",
+        unitCode,
+        ticketType: ticket.type,
+        department: ticket.department,
+        description: ticket.description,
+        status: "resolved",
+      }),
     });
   }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, MoreHorizontal } from "lucide-react";
 
+import { BrandMark } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { navForRole, type StaffRole, type NavItem } from "@/lib/nav";
 import { useI18n } from "@/lib/i18n/context";
@@ -49,9 +50,7 @@ export function AppShell({
       <aside className="hidden w-[15.5rem] shrink-0 md:flex md:flex-col bg-[var(--sidebar)] text-[var(--sidebar-foreground)]">
         <div className="px-5 pt-6 pb-5">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-[var(--sidebar-active)]/20 text-sm font-bold tracking-tight text-[var(--sidebar-active)]">
-              DC
-            </div>
+            <BrandMark size={36} className="rounded-xl" />
             <div>
               <div className="text-[15px] font-semibold tracking-tight">Dragon City</div>
               <div className="text-[11px] capitalize text-[var(--sidebar-muted)]">{role}</div>
@@ -85,9 +84,7 @@ export function AppShell({
           style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
         >
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
-              DC
-            </div>
+            <BrandMark size={32} className="rounded-lg" />
             <div>
               <div className="text-sm font-semibold tracking-tight">Dragon City</div>
               <div className="text-[11px] text-muted-foreground capitalize">{role}</div>

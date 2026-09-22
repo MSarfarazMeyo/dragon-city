@@ -1,9 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
+import { getViewerLocale } from "@/lib/locale";
+import { dictionaries } from "@/lib/i18n/dictionaries";
 import { CreateTicketDialog } from "@/components/tickets/create-ticket-dialog";
 import { TicketsBoard, type TicketActivityEntry, type TicketRow } from "@/components/tickets/tickets-board";
 
 export default async function TicketsPage() {
   const supabase = await createClient();
+  const locale = await getViewerLocale(supabase);
+  const t = dictionaries[locale].tickets;
 
   const {
     data: { user },
@@ -64,10 +68,8 @@ export default async function TicketsPage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Tickets</h1>
-          <p className="text-sm text-muted-foreground">
-            Department-routed work queue — click any ticket for full detail and actions.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t.title}</h1>
+          <p className="text-sm text-muted-foreground">{t.subtitle}</p>
         </div>
         <CreateTicketDialog units={units ?? []} merchants={merchants ?? []} />
       </div>

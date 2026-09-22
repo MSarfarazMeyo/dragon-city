@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DeleteInvoiceButton } from "@/components/finance/delete-invoice-button";
 import { LockToggleButton } from "@/components/finance/lock-toggle-button";
 import { RecordPaymentDialog } from "@/components/finance/record-payment-dialog";
+import { ResendInvoiceEmail } from "@/components/finance/resend-invoice-email";
 import { StatCard, StatCardRow } from "@/components/ui/stat-card";
 import { cn } from "@/lib/utils";
 
@@ -116,6 +117,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-wrap items-center gap-2">
         {invoice.status === "pending" && <RecordPaymentDialog invoiceId={invoice.id} balance={balance} />}
         {lease && <LockToggleButton leaseId={lease.id} locked={lease.is_locked} />}
+        <ResendInvoiceEmail invoiceId={invoice.id} />
         <DeleteInvoiceButton invoiceId={invoice.id} />
       </div>
 
@@ -124,6 +126,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <div className="border-b bg-muted/40 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Line items
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
               {lineItems.map((li) => (
@@ -138,6 +141,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className="rounded-lg border">
@@ -147,6 +151,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           {invoice.payments.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">No payments recorded yet.</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <tbody>
                 {invoice.payments.map((p) => {
@@ -165,6 +170,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

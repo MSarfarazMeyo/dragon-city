@@ -41,7 +41,7 @@ type FloorPlanMapProps = {
 };
 
 export function FloorPlanMap({ floor, units, onSelect }: FloorPlanMapProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -168,11 +168,11 @@ export function FloorPlanMap({ floor, units, onSelect }: FloorPlanMapProps) {
       <div className="flex flex-wrap gap-1.5">
         <FilterChip label={t.common.all} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
         {[...statusCounts.entries()]
-          .sort(([a], [b]) => displayStatusLabel(a).localeCompare(displayStatusLabel(b)))
+          .sort(([a], [b]) => displayStatusLabel(a, locale).localeCompare(displayStatusLabel(b, locale)))
           .map(([status, count]) => (
             <FilterChip
               key={status}
-              label={`${displayStatusLabel(status)} (${count})`}
+              label={`${displayStatusLabel(status, locale)} (${count})`}
               color={displayStatusColor(status)}
               active={statusFilter === status}
               onClick={() => setStatusFilter(status)}

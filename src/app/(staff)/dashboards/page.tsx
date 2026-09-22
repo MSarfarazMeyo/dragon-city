@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { statusOf, STATUS_LABEL, STATUS_COLOR, type ShopStatus } from "@/lib/shop-status";
+import { statusOf, statusLabel, STATUS_COLOR, type ShopStatus } from "@/lib/shop-status";
+import { isLocale } from "@/lib/i18n/dictionaries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,8 +30,9 @@ export default async function DashboardsPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", user!.id).single();
+  const { data: myProfile } = await supabase.from("profiles").select("role, locale").eq("id", user!.id).single();
   const isAdmin = myProfile?.role === "admin";
+  const locale = myProfile?.locale && isLocale(myProfile.locale) ? myProfile.locale : "en";
 
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -196,7 +198,7 @@ export default async function DashboardsPage() {
                 return (
                   <div
                     key={s}
-                    title={`${STATUS_LABEL[s]}: ${n}`}
+                    title={`${statusLabel(s, locale)}: ${n}`}
                     style={{ width: `${(n / total) * 100}%`, backgroundColor: STATUS_COLOR[s] }}
                   />
                 );
@@ -211,7 +213,7 @@ export default async function DashboardsPage() {
                     <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_COLOR[s] }} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2 text-sm">
-                        <span className="font-medium">{STATUS_LABEL[s]}</span>
+                        <span className="font-medium">{statusLabel(s, locale)}</span>
                         <span className="tabular-nums text-muted-foreground">{n}</span>
                       </div>
                       <ProgressBar value={pct} className="mt-1.5 h-1.5" style={{ backgroundColor: STATUS_COLOR[s] }} />

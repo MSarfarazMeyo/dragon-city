@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { createTicket, type TicketFormState } from "@/app/(staff)/tickets/actions";
+import { useI18n } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ export function CreateTicketDialog({
   units: { id: string; code: string }[];
   merchants: { id: string; name: string }[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState<TicketFormState, FormData>(createTicket, null);
@@ -42,44 +44,44 @@ export function CreateTicketDialog({
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="size-4" />
-          New ticket
+          {t.tickets.newTicket}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <form ref={formRef} action={formAction} className="space-y-4">
           <DialogHeader>
-            <DialogTitle>New ticket</DialogTitle>
-            <DialogDescription>Routes to the department that owns it — nobody else sees it by default.</DialogDescription>
+            <DialogTitle>{t.tickets.createDialogTitle}</DialogTitle>
+            <DialogDescription>{t.tickets.createDialogDesc}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
+            <Label htmlFor="department">{t.tickets.fieldDepartment}</Label>
             <select
               id="department"
               name="department"
               required
               className="border-input h-9 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             >
-              <option value="maintenance">Maintenance</option>
-              <option value="finance">Finance</option>
-              <option value="operations">Operations</option>
+              <option value="maintenance">{t.tickets.deptMaintenance}</option>
+              <option value="finance">{t.tickets.deptFinance}</option>
+              <option value="operations">{t.tickets.deptOperations}</option>
             </select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="type">Type</Label>
-            <Input id="type" name="type" placeholder="Repair request, complaint…" required />
+            <Label htmlFor="type">{t.tickets.fieldType}</Label>
+            <Input id="type" name="type" placeholder={t.tickets.typePlaceholder} required />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="unit_id">Shop</Label>
+              <Label htmlFor="unit_id">{t.tickets.fieldShop}</Label>
               <select
                 id="unit_id"
                 name="unit_id"
                 className="border-input h-9 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               >
-                <option value="">None</option>
+                <option value="">{t.tickets.none}</option>
                 {units.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.code}
@@ -88,13 +90,13 @@ export function CreateTicketDialog({
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="merchant_id">Merchant</Label>
+              <Label htmlFor="merchant_id">{t.tickets.fieldMerchant}</Label>
               <select
                 id="merchant_id"
                 name="merchant_id"
                 className="border-input h-9 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               >
-                <option value="">None</option>
+                <option value="">{t.tickets.none}</option>
                 {merchants.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
@@ -105,11 +107,11 @@ export function CreateTicketDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t.tickets.fieldDescription}</Label>
             <textarea
               id="description"
               name="description"
-              placeholder="What happened, where, and what you need…"
+              placeholder={t.tickets.descPlaceholder}
               rows={4}
               className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             />
@@ -119,7 +121,7 @@ export function CreateTicketDialog({
 
           <DialogFooter>
             <Button type="submit" disabled={pending}>
-              {pending ? "Creating…" : "Create ticket"}
+              {pending ? t.tickets.creating : t.tickets.create}
             </Button>
           </DialogFooter>
         </form>

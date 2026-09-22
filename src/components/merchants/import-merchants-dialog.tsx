@@ -4,6 +4,8 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Upload } from "lucide-react";
 
 import { importMerchants, type ImportMerchantsState } from "@/app/(staff)/merchants/actions";
+import { useI18n } from "@/lib/i18n/context";
+import { applyTemplateVars } from "@/lib/notification-template";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 
 export function ImportMerchantsDialog() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState<ImportMerchantsState, FormData>(importMerchants, null);
@@ -35,20 +38,18 @@ export function ImportMerchantsDialog() {
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           <Upload className="size-4" />
-          Import CSV
+          {t.merchants.importCsv}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <form ref={formRef} action={formAction} className="space-y-4">
           <DialogHeader>
-            <DialogTitle>Import merchants</DialogTitle>
-            <DialogDescription>
-              CSV columns: name, type (individual/company), phone. Header row optional.
-            </DialogDescription>
+            <DialogTitle>{t.merchants.importDialogTitle}</DialogTitle>
+            <DialogDescription>{t.merchants.importDialogDesc}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
-            <Label htmlFor="file">CSV file</Label>
+            <Label htmlFor="file">{t.merchants.csvFile}</Label>
             <input
               id="file"
               name="file"
@@ -61,12 +62,12 @@ export function ImportMerchantsDialog() {
 
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
           {state?.imported != null && state.imported > 0 && (
-            <p className="text-sm text-emerald-600">Imported {state.imported} merchant(s).</p>
+            <p className="text-sm text-emerald-600">{applyTemplateVars(t.merchants.imported, { n: String(state.imported) })}</p>
           )}
 
           <DialogFooter>
             <Button type="submit" disabled={pending}>
-              {pending ? "Importing…" : "Import"}
+              {pending ? t.merchants.importing : t.merchants.import}
             </Button>
           </DialogFooter>
         </form>

@@ -5,7 +5,7 @@ import nodemailer from "nodemailer";
 // before this is configured. Uses plain SMTP (e.g. the same Gmail app
 // password already set up for Supabase Auth emails) rather than a
 // separate provider, since no Resend/SendGrid account exists yet.
-export async function sendEmail(to: string, subject: string, body: string): Promise<boolean> {
+export async function sendEmail(to: string, subject: string, body: string, html?: string): Promise<boolean> {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
 
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
@@ -25,6 +25,7 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
     to,
     subject,
     text: body,
+    ...(html ? { html } : {}),
   });
 
   return true;

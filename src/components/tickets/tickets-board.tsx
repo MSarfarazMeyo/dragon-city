@@ -26,6 +26,9 @@ import {
   unarchiveTicket,
   updateStatus,
 } from "@/app/(staff)/tickets/actions";
+import { useI18n } from "@/lib/i18n/context";
+import { applyTemplateVars } from "@/lib/notification-template";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -73,6 +76,8 @@ export function TicketsBoard({
   tickets: TicketRow[];
   isAdmin: boolean;
 }) {
+  const { t } = useI18n();
+  const tt = t.tickets;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [department, setDepartment] = useState<DeptFilter>("all");
@@ -142,13 +147,16 @@ export function TicketsBoard({
     });
   }
 
+  const deptLabel = (dept: string) =>
+    dept === "finance" ? tt.deptFinance : dept === "maintenance" ? tt.deptMaintenance : tt.deptOperations;
+
   return (
     <div className="space-y-4">
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryChip label="Open" value={counts.open} tone="sky" active={status === "open" && !showArchived} onClick={() => setStatusFilter("open")} />
-        <SummaryChip label="In progress" value={counts.in_progress} tone="amber" active={status === "in_progress" && !showArchived} onClick={() => setStatusFilter("in_progress")} />
-        <SummaryChip label="Resolved" value={counts.resolved} tone="emerald" active={status === "resolved" && !showArchived} onClick={() => setStatusFilter("resolved")} />
-        <SummaryChip label="Archived" value={counts.archived} tone="slate" active={showArchived} onClick={() => setStatusFilter("all", true)} />
+        <SummaryChip label={tt.statOpen} value={counts.open} tone="sky" active={status === "open" && !showArchived} onClick={() => setStatusFilter("open")} />
+        <SummaryChip label={tt.statInProgress} value={counts.in_progress} tone="amber" active={status === "in_progress" && !showArchived} onClick={() => setStatusFilter("in_progress")} />
+        <SummaryChip label={tt.statResolved} value={counts.resolved} tone="emerald" active={status === "resolved" && !showArchived} onClick={() => setStatusFilter("resolved")} />
+        <SummaryChip label={tt.statArchived} value={counts.archived} tone="slate" active={showArchived} onClick={() => setStatusFilter("all", true)} />
       </div>
 
       <Card className="shadow-sm">
@@ -162,43 +170,43 @@ export function TicketsBoard({
                   setQuery(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Search type, shop, merchant…"
+                placeholder={tt.searchPlaceholder}
                 className="h-11 ps-9"
               />
             </div>
             <div className="flex flex-wrap gap-2">
               <FilterSelect
-                label="Status"
+                label={tt.filterStatusLabel}
                 value={status}
                 onChange={(v) => {
                   setStatus(v as StatusFilter);
                   setPage(1);
                 }}
                 options={[
-                  { value: "all", label: "All statuses" },
-                  { value: "open", label: "Open" },
-                  { value: "in_progress", label: "In progress" },
-                  { value: "resolved", label: "Resolved" },
+                  { value: "all", label: tt.filterAllStatuses },
+                  { value: "open", label: tt.statOpen },
+                  { value: "in_progress", label: tt.statInProgress },
+                  { value: "resolved", label: tt.statResolved },
                 ]}
               />
               <FilterSelect
-                label="Department"
+                label={tt.filterDepartmentLabel}
                 value={department}
                 onChange={(v) => {
                   setDepartment(v as DeptFilter);
                   setPage(1);
                 }}
                 options={[
-                  { value: "all", label: "All departments" },
-                  { value: "operations", label: "Operations" },
-                  { value: "finance", label: "Finance" },
-                  { value: "maintenance", label: "Maintenance" },
+                  { value: "all", label: tt.filterAllDepartments },
+                  { value: "operations", label: tt.deptOperations },
+                  { value: "finance", label: tt.deptFinance },
+                  { value: "maintenance", label: tt.deptMaintenance },
                 ]}
               />
               {(status !== "all" || department !== "all" || query || showArchived) && (
                 <Button variant="ghost" className="h-11" onClick={resetFilters}>
                   <RotateCcw className="size-4" />
-                  Reset
+                  {tt.reset}
                 </Button>
               )}
             </div>
@@ -206,8 +214,8 @@ export function TicketsBoard({
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Filter className="size-3.5" />
             {filtered.length === 0
-              ? "No tickets match these filters"
-              : `Showing ${pageStart + 1}–${pageEnd} of ${filtered.length} tickets`}
+              ? tt.noMatchFilters
+              : applyTemplateVars(tt.showing, { from: String(pageStart + 1), to: String(pageEnd), count: String(filtered.length) })}
           </div>
         </CardContent>
       </Card>
@@ -215,7 +223,7 @@ export function TicketsBoard({
       {filtered.length === 0 ? (
         <Card className="border-dashed shadow-none">
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            No tickets match these filters.
+            {tt.noMatchFiltersLong}
           </CardContent>
         </Card>
       ) : (
@@ -231,14 +239,14 @@ export function TicketsBoard({
                 <div className="min-w-0">
                   <div className="truncate font-medium">{t.type}</div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {t.units?.code ?? "No shop"} · {t.merchants?.name ?? "No merchant"}
+                    {t.units?.code ?? tt.noShop} · {t.merchants?.name ?? tt.noMerchant}
                   </div>
                 </div>
-                <StatusBadge status={t.status} archived={Boolean(t.archived_at)} />
+                <StatusBadge status={t.status} archived={Boolean(t.archived_at)} t={tt} />
               </div>
               <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                <span className="capitalize">{t.department}</span>
-                <span className="tabular-nums">{formatWhen(t.created_at)}</span>
+                <span>{deptLabel(t.department)}</span>
+                <span className="tabular-nums">{formatWhen(t.created_at, tt)}</span>
               </div>
             </button>
           ))}
@@ -250,12 +258,12 @@ export function TicketsBoard({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Ticket</th>
-                <th className="px-4 py-3 font-medium">Shop</th>
-                <th className="px-4 py-3 font-medium">Merchant</th>
-                <th className="px-4 py-3 font-medium">Dept</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Created</th>
+                <th className="px-4 py-3 font-medium">{tt.colTicket}</th>
+                <th className="px-4 py-3 font-medium">{tt.colShop}</th>
+                <th className="px-4 py-3 font-medium">{tt.colMerchant}</th>
+                <th className="px-4 py-3 font-medium">{tt.colDept}</th>
+                <th className="px-4 py-3 font-medium">{tt.colStatus}</th>
+                <th className="px-4 py-3 font-medium">{tt.colCreated}</th>
               </tr>
             </thead>
             <tbody>
@@ -273,11 +281,11 @@ export function TicketsBoard({
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{t.units?.code ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{t.merchants?.name ?? "—"}</td>
-                  <td className="px-4 py-3 capitalize text-muted-foreground">{t.department}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{deptLabel(t.department)}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={t.status} archived={Boolean(t.archived_at)} />
+                    <StatusBadge status={t.status} archived={Boolean(t.archived_at)} t={tt} />
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-muted-foreground">{formatWhen(t.created_at)}</td>
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground">{formatWhen(t.created_at, tt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -288,7 +296,7 @@ export function TicketsBoard({
       {filtered.length > 0 && (
         <div className="flex flex-col gap-3 rounded-xl border bg-card px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Rows per page</span>
+            <span>{tt.rowsPerPage}</span>
             <select
               value={pageSize}
               onChange={(e) => {
@@ -306,7 +314,7 @@ export function TicketsBoard({
           </div>
           <div className="flex items-center justify-between gap-3 sm:justify-end">
             <span className="text-sm tabular-nums text-muted-foreground">
-              Page {safePage} of {totalPages}
+              {applyTemplateVars(tt.pageOf, { page: String(safePage), total: String(totalPages) })}
             </span>
             <div className="flex gap-1">
               <Button
@@ -315,7 +323,7 @@ export function TicketsBoard({
                 className="size-9"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                aria-label="Previous page"
+                aria-label={tt.previousPage}
               >
                 <ChevronLeft className="size-4" />
               </Button>
@@ -325,7 +333,7 @@ export function TicketsBoard({
                 className="size-9"
                 disabled={safePage >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                aria-label="Next page"
+                aria-label={tt.nextPage}
               >
                 <ChevronRight className="size-4" />
               </Button>
@@ -370,7 +378,11 @@ function TicketDetailPanel({
   onClose: () => void;
   onAction: (action: () => Promise<unknown>) => void;
 }) {
-  const creatorLabel = ticket.creator?.full_name ?? ticket.creator?.role ?? "Unknown";
+  const { t } = useI18n();
+  const tt = t.tickets;
+  const deptLabel = (dept: string) =>
+    dept === "finance" ? tt.deptFinance : dept === "maintenance" ? tt.deptMaintenance : tt.deptOperations;
+  const creatorLabel = ticket.creator?.full_name ?? ticket.creator?.role ?? tt.unknown;
   const statusTone =
     ticket.archived_at
       ? "from-slate-500/20 via-slate-500/5 to-transparent"
@@ -385,10 +397,8 @@ function TicketDetailPanel({
       <div className={cn("relative border-b bg-gradient-to-b px-5 pb-4 pt-5", statusTone)}>
         <div className="pr-10">
           <div className="mb-2 flex flex-wrap items-center gap-1.5">
-            <StatusBadge status={ticket.status} archived={Boolean(ticket.archived_at)} />
-            <Badge variant="outline" className="capitalize">
-              {ticket.department}
-            </Badge>
+            <StatusBadge status={ticket.status} archived={Boolean(ticket.archived_at)} t={tt} />
+            <Badge variant="outline">{deptLabel(ticket.department)}</Badge>
             {ticket.units?.code && (
               <Badge variant="secondary" className="font-mono">
                 {ticket.units.code}
@@ -397,22 +407,22 @@ function TicketDetailPanel({
           </div>
           <h2 className="text-lg font-semibold leading-snug tracking-tight">{ticket.type}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Opened {formatWhen(ticket.created_at)} · {new Date(ticket.created_at).toLocaleString()}
+            {applyTemplateVars(tt.opened, { when: formatWhen(ticket.created_at, tt) })} · {new Date(ticket.created_at).toLocaleString()}
           </p>
         </div>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
         <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-          <MetaRow icon={Store} label="Shop" value={ticket.units?.code ?? "Not linked"} />
-          <MetaRow icon={Building2} label="Merchant" value={ticket.merchants?.name ?? "Not linked"} />
-          <MetaRow icon={UserRound} label="Created by" value={creatorLabel} last />
+          <MetaRow icon={Store} label={tt.detailShop} value={ticket.units?.code ?? tt.notLinked} />
+          <MetaRow icon={Building2} label={tt.detailMerchant} value={ticket.merchants?.name ?? tt.notLinked} />
+          <MetaRow icon={UserRound} label={tt.detailCreatedBy} value={creatorLabel} last />
         </section>
 
         <section className="rounded-2xl border bg-card p-4 shadow-sm">
           <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <MessageSquareText className="size-3.5" />
-            Description
+            {tt.description}
           </div>
           <p
             className={cn(
@@ -420,23 +430,23 @@ function TicketDetailPanel({
               !ticket.description?.trim() && "italic text-muted-foreground",
             )}
           >
-            {ticket.description?.trim() || "No description was added for this ticket."}
+            {ticket.description?.trim() || tt.noDescription}
           </p>
         </section>
 
         <section className="rounded-2xl border bg-card p-4 shadow-sm">
-          <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Timeline</div>
+          <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tt.timeline}</div>
           <ol className="space-y-3">
             <TimelineItem
-              title="Created"
+              title={tt.created}
               detail={new Date(ticket.created_at).toLocaleString()}
               active
             />
             {ticket.resolved_at && (
-              <TimelineItem title="Resolved" detail={new Date(ticket.resolved_at).toLocaleString()} />
+              <TimelineItem title={tt.resolved} detail={new Date(ticket.resolved_at).toLocaleString()} />
             )}
             {ticket.archived_at && (
-              <TimelineItem title="Archived" detail={new Date(ticket.archived_at).toLocaleString()} />
+              <TimelineItem title={tt.archived} detail={new Date(ticket.archived_at).toLocaleString()} />
             )}
           </ol>
         </section>
@@ -444,17 +454,17 @@ function TicketDetailPanel({
         <section className="rounded-2xl border bg-card p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <History className="size-3.5" />
-            Activity
+            {tt.activity}
           </div>
           {ticket.activity.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No changes recorded yet.</p>
+            <p className="text-sm text-muted-foreground">{tt.noActivity}</p>
           ) : (
             <ol className="space-y-2.5">
               {ticket.activity.map((entry) => (
                 <li key={entry.id} className="text-sm">
-                  <span className="font-medium">{entry.actor?.full_name ?? entry.actor?.role ?? "System"}</span>{" "}
+                  <span className="font-medium">{entry.actor?.full_name ?? entry.actor?.role ?? tt.system}</span>{" "}
                   <span className="text-muted-foreground">
-                    {entry.action === "insert" ? "created this ticket" : describeTicketDiff(entry.diff)}
+                    {entry.action === "insert" ? tt.createdThisTicket : describeTicketDiff(entry.diff, tt)}
                     {" · "}
                     {new Date(entry.created_at).toLocaleString()}
                   </span>
@@ -482,12 +492,12 @@ function TicketDetailPanel({
                 onClick={() => onAction(() => updateStatus(ticket.id, "in_progress"))}
               >
                 <Play className="size-4" />
-                Start
+                {tt.start}
               </Button>
             )}
             <Button disabled={pending} className="h-10" onClick={() => onAction(() => updateStatus(ticket.id, "resolved"))}>
               <CheckCircle2 className="size-4" />
-              Resolve
+              {tt.resolve}
             </Button>
           </div>
         )}
@@ -500,7 +510,7 @@ function TicketDetailPanel({
             onClick={() => onAction(() => reopenTicket(ticket.id))}
           >
             <RotateCcw className="size-4" />
-            Reopen ticket
+            {tt.reopenTicket}
           </Button>
         )}
 
@@ -518,7 +528,7 @@ function TicketDetailPanel({
               }
             >
               <Archive className="size-4" />
-              Archive
+              {tt.archive}
             </Button>
           ) : (
             <Button
@@ -528,7 +538,7 @@ function TicketDetailPanel({
               onClick={() => onAction(() => unarchiveTicket(ticket.id))}
             >
               <ArchiveRestore className="size-4" />
-              Restore
+              {tt.restore}
             </Button>
           )}
 
@@ -538,9 +548,9 @@ function TicketDetailPanel({
               variant="destructive"
               size="icon"
               className="size-10 shrink-0"
-              aria-label="Delete permanently"
+              aria-label={tt.deletePermanently}
               onClick={() => {
-                if (!confirm("Permanently delete this ticket? This cannot be undone.")) return;
+                if (!confirm(tt.deleteConfirm)) return;
                 onAction(async () => {
                   const result = await deleteTicket(ticket.id);
                   if (!result?.error) onClose();
@@ -668,31 +678,39 @@ function FilterSelect({
   );
 }
 
-function StatusBadge({ status, archived }: { status: TicketRow["status"]; archived?: boolean }) {
-  if (archived) return <Badge variant="secondary">Archived</Badge>;
+function StatusBadge({
+  status,
+  archived,
+  t,
+}: {
+  status: TicketRow["status"];
+  archived?: boolean;
+  t: Dictionary["tickets"];
+}) {
+  if (archived) return <Badge variant="secondary">{t.statArchived}</Badge>;
+  const label = status === "resolved" ? t.statResolved : status === "in_progress" ? t.statInProgress : t.statOpen;
   return (
     <Badge
       variant={status === "resolved" ? "secondary" : status === "in_progress" ? "outline" : "default"}
       className={cn(
-        "capitalize",
         status === "open" && "bg-sky-500/10 text-sky-700 hover:bg-sky-500/10 dark:text-sky-300",
         status === "in_progress" && "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300",
         status === "resolved" && "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300",
       )}
     >
-      {status.replace("_", " ")}
+      {label}
     </Badge>
   );
 }
 
-function formatWhen(iso: string) {
+function formatWhen(iso: string, t: Dictionary["tickets"]) {
   const d = new Date(iso);
   const now = Date.now();
   const diff = now - d.getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${Math.max(1, mins)}m ago`;
+  if (mins < 60) return applyTemplateVars(t.minutesAgo, { n: String(Math.max(1, mins)) });
   const hours = Math.floor(mins / 60);
-  if (hours < 48) return `${hours}h ago`;
+  if (hours < 48) return applyTemplateVars(t.hoursAgo, { n: String(hours) });
   return d.toLocaleDateString();
 }
 
@@ -704,10 +722,10 @@ function formatWhen(iso: string) {
 // up in an activity trail meant for non-technical readers.
 const HIDDEN_DIFF_FIELDS = new Set(["resolved_at", "archived_at", "assigned_to"]);
 
-function describeTicketDiff(diff: Record<string, [unknown, unknown]> | null) {
-  if (!diff) return "made a change";
+function describeTicketDiff(diff: Record<string, [unknown, unknown]> | null, t: Dictionary["tickets"]) {
+  if (!diff) return t.madeChange;
   const parts = Object.entries(diff)
     .filter(([field]) => !HIDDEN_DIFF_FIELDS.has(field))
     .map(([field, [, next]]) => `${field.replace(/_/g, " ")} → ${next ?? "—"}`);
-  return parts.length > 0 ? `changed ${parts.join(", ")}` : "made a change";
+  return parts.length > 0 ? `${t.changed} ${parts.join(", ")}` : t.madeChange;
 }

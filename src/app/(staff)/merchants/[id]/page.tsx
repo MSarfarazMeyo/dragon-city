@@ -4,6 +4,8 @@ import { KeyRound, Store, Ticket, Wallet } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getAvatarUrl } from "@/lib/avatar-actions";
+import { getViewerLocale } from "@/lib/locale";
+import { dictionaries } from "@/lib/i18n/dictionaries";
 import { findMerchantAccount } from "@/app/(staff)/merchants/account-actions";
 import { AccountPanel } from "@/components/merchants/account-panel";
 import { AssignShopDialog } from "@/components/merchants/assign-shop-dialog";
@@ -19,6 +21,9 @@ import { cn } from "@/lib/utils";
 export default async function MerchantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  const locale = await getViewerLocale(supabase);
+  const t = dictionaries[locale].merchants;
+  const tt = dictionaries[locale].tickets;
 
   const { data: merchant } = await supabase
     .from("merchants")
@@ -79,11 +84,17 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
     totalOutstanding += total - paid;
   }
 
+  const typeLabel = merchant.type === "company" ? t.typeCompany : t.typeIndividual;
+  const deptLabel = (dept: string) =>
+    dept === "finance" ? tt.deptFinance : dept === "maintenance" ? tt.deptMaintenance : tt.deptOperations;
+  const ticketStatusLabel = (status: string) =>
+    status === "resolved" ? tt.statResolved : status === "in_progress" ? tt.statInProgress : tt.statOpen;
+
   return (
     <div className="space-y-6">
       <div>
         <Link href="/merchants" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Merchants
+          {t.backLink}
         </Link>
         <div className="mt-2 flex items-center gap-4">
           <AvatarUpload
@@ -95,7 +106,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
           />
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">{merchant.name}</h1>
-            <p className="text-muted-foreground text-sm capitalize">{merchant.type}</p>
+            <p className="text-muted-foreground text-sm">{typeLabel}</p>
           </div>
         </div>
       </div>
@@ -105,26 +116,26 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
         tabs={[
           {
             id: "overview",
-            label: "Overview",
+            label: t.tabOverview,
             content: (
               <div className="space-y-6">
                 <StatCardRow>
-                  <StatCard label="Active shops" value={activeLeases.length} icon={Store} tone="teal" />
+                  <StatCard label={t.statActiveShops} value={activeLeases.length} icon={Store} tone="teal" />
                   <StatCard
-                    label="Outstanding"
+                    label={t.statOutstanding}
                     value={`SAR ${totalOutstanding.toFixed(2)}`}
                     icon={Wallet}
                     tone={totalOutstanding > 0 ? "amber" : "neutral"}
                   />
-                  <StatCard label="Open tickets" value={openTickets.length} icon={Ticket} tone={openTickets.length ? "rose" : "neutral"} />
-                  <StatCard label="Login" value={account ? "Active" : "None"} icon={KeyRound} tone={account ? "sky" : "neutral"} />
+                  <StatCard label={t.statOpenTickets} value={openTickets.length} icon={Ticket} tone={openTickets.length ? "rose" : "neutral"} />
+                  <StatCard label={t.statLogin} value={account ? t.loginActive : t.loginNone} icon={KeyRound} tone={account ? "sky" : "neutral"} />
                 </StatCardRow>
 
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <InfoCard label="Contact" value={merchant.contact_name ?? "—"} />
-                  <InfoCard label="Phone" value={merchant.contact_phone ?? "—"} />
-                  <InfoCard label="Email" value={merchant.contact_email ?? "—"} />
-                  <InfoCard label="CR number" value={merchant.cr_number ?? "—"} />
+                  <InfoCard label={t.infoContact} value={merchant.contact_name ?? "—"} />
+                  <InfoCard label={t.infoPhone} value={merchant.contact_phone ?? "—"} />
+                  <InfoCard label={t.infoEmail} value={merchant.contact_email ?? "—"} />
+                  <InfoCard label={t.infoCrNumber} value={merchant.cr_number ?? "—"} />
                 </section>
 
                 {merchant.notes && (
@@ -135,24 +146,24 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
           },
           {
             id: "shops",
-            label: "Shops",
+            label: t.tabShops,
             count: activeLeases.length,
             content: (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Active shops</h2>
+                  <h2 className="text-lg font-semibold">{t.activeShopsHeading}</h2>
                   <AssignShopDialog merchantId={merchant.id} freeUnits={freeUnits} />
                 </div>
                 {activeLeases.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No active shops. Assign one to get started.</p>
+                  <p className="text-sm text-muted-foreground">{t.noActiveShops}</p>
                 ) : (
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-                          <th className="px-4 py-2 font-medium">Unit</th>
-                          <th className="px-4 py-2 font-medium">Period</th>
-                          <th className="px-4 py-2 font-medium text-right">Rent</th>
+                          <th className="px-4 py-2 font-medium">{t.colUnit}</th>
+                          <th className="px-4 py-2 font-medium">{t.colPeriod}</th>
+                          <th className="px-4 py-2 font-medium text-right">{t.colRent}</th>
                           <th className="px-4 py-2 font-medium"></th>
                         </tr>
                       </thead>
@@ -169,7 +180,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
                               )}
                             </td>
                             <td className="px-4 py-2 text-muted-foreground">
-                              {l.start_date} → {l.end_date ?? "open"}
+                              {l.start_date} → {l.end_date ?? t.open}
                             </td>
                             <td className="px-4 py-2 text-right tabular-nums">{l.rent_amount?.toFixed(2) ?? "—"}</td>
                             <td className="px-4 py-2 text-right">
@@ -184,14 +195,14 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
 
                 {historyLeases.length > 0 && (
                   <>
-                    <h2 className="text-lg font-semibold">Lease history</h2>
+                    <h2 className="text-lg font-semibold">{t.leaseHistoryHeading}</h2>
                     <div className="overflow-x-auto rounded-lg border">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-                            <th className="px-4 py-2 font-medium">Unit</th>
-                            <th className="px-4 py-2 font-medium">Period</th>
-                            <th className="px-4 py-2 font-medium">Status</th>
+                            <th className="px-4 py-2 font-medium">{t.colUnit}</th>
+                            <th className="px-4 py-2 font-medium">{t.colPeriod}</th>
+                            <th className="px-4 py-2 font-medium">{t.colStatus}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -214,22 +225,22 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
           },
           {
             id: "invoices",
-            label: "Invoices",
+            label: t.tabInvoices,
             count: invoices?.length ?? 0,
             content: (
               <div className="space-y-3">
                 {!invoices || invoices.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No invoices yet.</p>
+                  <p className="text-sm text-muted-foreground">{t.noInvoicesYet}</p>
                 ) : (
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-                          <th className="px-4 py-2 font-medium">Period</th>
-                          <th className="px-4 py-2 font-medium">Due</th>
-                          <th className="px-4 py-2 font-medium text-right">Total</th>
-                          <th className="px-4 py-2 font-medium text-right">Balance</th>
-                          <th className="px-4 py-2 font-medium">Status</th>
+                          <th className="px-4 py-2 font-medium">{t.colPeriod}</th>
+                          <th className="px-4 py-2 font-medium">{t.colDue}</th>
+                          <th className="px-4 py-2 font-medium text-right">{t.colTotal}</th>
+                          <th className="px-4 py-2 font-medium text-right">{t.colBalance}</th>
+                          <th className="px-4 py-2 font-medium">{t.colStatus}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -257,7 +268,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
                                     overdue && "bg-rose-500/10 text-rose-700 dark:text-rose-400",
                                   )}
                                 >
-                                  {overdue ? "Overdue" : inv.status === "paid" ? "Paid" : "Pending"}
+                                  {overdue ? t.invoiceOverdue : inv.status === "paid" ? t.invoicePaid : t.invoicePending}
                                 </span>
                               </td>
                             </tr>
@@ -272,43 +283,43 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
           },
           {
             id: "tickets",
-            label: "Tickets",
+            label: t.tabTickets,
             count: openTickets.length,
             content: (
               <div className="space-y-3">
                 {!tickets || tickets.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No tickets from this merchant.</p>
+                  <p className="text-sm text-muted-foreground">{t.noTicketsFromMerchant}</p>
                 ) : (
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-                          <th className="px-4 py-2 font-medium">Type</th>
-                          <th className="px-4 py-2 font-medium">Shop</th>
-                          <th className="px-4 py-2 font-medium">Department</th>
-                          <th className="px-4 py-2 font-medium">Status</th>
-                          <th className="px-4 py-2 font-medium">Opened</th>
+                          <th className="px-4 py-2 font-medium">{t.colTicketType}</th>
+                          <th className="px-4 py-2 font-medium">{t.colShop}</th>
+                          <th className="px-4 py-2 font-medium">{t.colDepartment}</th>
+                          <th className="px-4 py-2 font-medium">{t.colStatus}</th>
+                          <th className="px-4 py-2 font-medium">{t.colOpened}</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {tickets.map((t) => (
-                          <tr key={t.id} className="border-b last:border-0">
-                            <td className="px-4 py-2 font-medium">{t.type}</td>
-                            <td className="px-4 py-2 text-muted-foreground">{t.units?.code ?? "—"}</td>
-                            <td className="px-4 py-2 capitalize text-muted-foreground">{t.department}</td>
+                        {tickets.map((t2) => (
+                          <tr key={t2.id} className="border-b last:border-0">
+                            <td className="px-4 py-2 font-medium">{t2.type}</td>
+                            <td className="px-4 py-2 text-muted-foreground">{t2.units?.code ?? "—"}</td>
+                            <td className="px-4 py-2 text-muted-foreground">{deptLabel(t2.department)}</td>
                             <td className="px-4 py-2">
                               <span
                                 className={cn(
-                                  "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-                                  t.status === "resolved" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-                                  t.status === "open" && "bg-rose-500/10 text-rose-700 dark:text-rose-400",
-                                  t.status === "in_progress" && "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                                  "rounded-full px-2 py-0.5 text-xs font-medium",
+                                  t2.status === "resolved" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                                  t2.status === "open" && "bg-rose-500/10 text-rose-700 dark:text-rose-400",
+                                  t2.status === "in_progress" && "bg-amber-500/10 text-amber-700 dark:text-amber-400",
                                 )}
                               >
-                                {t.status.replace("_", " ")}
+                                {ticketStatusLabel(t2.status)}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-2 text-muted-foreground">{new Date(t2.created_at).toLocaleDateString()}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -320,7 +331,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
           },
           {
             id: "documents",
-            label: "Documents",
+            label: t.tabDocuments,
             count: documents?.length ?? 0,
             content: (
               <div className="space-y-3">
@@ -328,7 +339,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
                   <UploadDocumentDialog merchants={[{ id: merchant.id, name: merchant.name }]} />
                 </div>
                 {!documents || documents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No documents on file.</p>
+                  <p className="text-sm text-muted-foreground">{t.noDocuments}</p>
                 ) : (
                   <ul className="divide-y rounded-lg border">
                     {documents.map((doc) => (
@@ -350,7 +361,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
           },
           {
             id: "account",
-            label: "Account",
+            label: t.tabAccount,
             content: <AccountPanel merchantId={merchant.id} account={account} />,
           },
         ]}

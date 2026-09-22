@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { createLease, type LeaseFormState } from "@/app/(staff)/map/lease-actions";
+import { useI18n } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +28,7 @@ export function AssignShopDialog({
   merchantId: string;
   freeUnits: { id: string; code: string }[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState<LeaseFormState, FormData>(createLease, null);
@@ -47,20 +49,20 @@ export function AssignShopDialog({
       <DialogTrigger asChild>
         <Button size="sm" disabled={freeUnits.length === 0}>
           <Plus className="size-4" />
-          Assign a shop
+          {t.merchants.assignShop}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <form ref={formRef} action={formAction} className="space-y-4">
           <DialogHeader>
-            <DialogTitle>Assign a shop to this merchant</DialogTitle>
-            <DialogDescription>Only shops with no active lease are listed.</DialogDescription>
+            <DialogTitle>{t.merchants.assignDialogTitle}</DialogTitle>
+            <DialogDescription>{t.merchants.assignDialogDesc}</DialogDescription>
           </DialogHeader>
 
           <input type="hidden" name="merchant_id" value={merchantId} />
 
           <div className="space-y-2">
-            <Label htmlFor="unit_id">Shop</Label>
+            <Label htmlFor="unit_id">{t.merchants.shopLabel}</Label>
             <select
               id="unit_id"
               name="unit_id"
@@ -77,41 +79,41 @@ export function AssignShopDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="start_date">Start date</Label>
+              <Label htmlFor="start_date">{t.merchants.startDate}</Label>
               <Input id="start_date" name="start_date" type="date" defaultValue={today} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="end_date">End date</Label>
+              <Label htmlFor="end_date">{t.merchants.endDate}</Label>
               <Input id="end_date" name="end_date" type="date" />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="rent_amount">Rent</Label>
-              <Input id="rent_amount" name="rent_amount" type="number" step="0.01" placeholder="Optional" />
+              <Label htmlFor="rent_amount">{t.merchants.rent}</Label>
+              <Input id="rent_amount" name="rent_amount" type="number" step="0.01" placeholder={t.merchants.optional} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deposit">Deposit</Label>
-              <Input id="deposit" name="deposit" type="number" step="0.01" placeholder="Optional" />
+              <Label htmlFor="deposit">{t.merchants.deposit}</Label>
+              <Input id="deposit" name="deposit" type="number" step="0.01" placeholder={t.merchants.optional} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="service_fee">Service fee</Label>
-              <Input id="service_fee" name="service_fee" type="number" step="0.01" placeholder="Optional" />
+              <Label htmlFor="service_fee">{t.merchants.serviceFee}</Label>
+              <Input id="service_fee" name="service_fee" type="number" step="0.01" placeholder={t.merchants.optional} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="billing_status">Billing status</Label>
+            <Label htmlFor="billing_status">{t.merchants.billingStatus}</Label>
             <select
               id="billing_status"
               name="billing_status"
               defaultValue="active"
               className="border-input h-9 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             >
-              <option value="active">Active (billed normally)</option>
-              <option value="fit_out">Fit-out (not yet open)</option>
-              <option value="free_use">Free use (occupied, unbilled)</option>
+              <option value="active">{t.merchants.billingActive}</option>
+              <option value="fit_out">{t.merchants.billingFitOut}</option>
+              <option value="free_use">{t.merchants.billingFreeUse}</option>
             </select>
           </div>
 
@@ -119,7 +121,7 @@ export function AssignShopDialog({
 
           <DialogFooter>
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : "Assign shop"}
+              {pending ? t.merchants.assigning : t.merchants.assign}
             </Button>
           </DialogFooter>
         </form>

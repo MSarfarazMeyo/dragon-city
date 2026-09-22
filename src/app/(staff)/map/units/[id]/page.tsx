@@ -4,6 +4,7 @@ import { Building2, KeyRound, Ticket, Wallet } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { displayStatus, displayStatusColor, displayStatusLabel, type PropertyStatus } from "@/lib/shop-status";
+import { getViewerLocale } from "@/lib/locale";
 import { DetailTabs } from "@/components/ui/detail-tabs";
 import { StatCard, StatCardRow } from "@/components/ui/stat-card";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 export default async function UnitDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  const locale = await getViewerLocale(supabase);
 
   const { data: unit } = await supabase
     .from("units")
@@ -85,7 +87,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             className="rounded-full px-2.5 py-1 text-xs font-medium"
             style={{ backgroundColor: `${displayStatusColor(status)}1a`, color: displayStatusColor(status) }}
           >
-            {displayStatusLabel(status)}
+            {displayStatusLabel(status, locale)}
           </span>
         </div>
         <p className="text-muted-foreground text-sm">
@@ -104,7 +106,7 @@ export default async function UnitDetailPage({ params }: { params: Promise<{ id:
             content: (
               <div className="space-y-6">
                 <StatCardRow>
-                  <StatCard label="Status" value={displayStatusLabel(status)} icon={KeyRound} tone={status === "overdue" ? "rose" : "teal"} />
+                  <StatCard label="Status" value={displayStatusLabel(status, locale)} icon={KeyRound} tone={status === "overdue" ? "rose" : "teal"} />
                   <StatCard
                     label="Outstanding"
                     value={`SAR ${totalOutstanding.toFixed(2)}`}

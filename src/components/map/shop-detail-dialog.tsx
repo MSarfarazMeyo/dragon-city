@@ -23,7 +23,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { PROPERTY_STATUS_LABEL, type PropertyStatus } from "@/lib/shop-status";
+import { PROPERTY_STATUS_LABEL, propertyStatusLabel, type PropertyStatus } from "@/lib/shop-status";
+import { useI18n } from "@/lib/i18n/context";
 
 type HistoryLease = Awaited<ReturnType<typeof getUnitHistory>>[number];
 
@@ -141,6 +142,7 @@ function ShopDetailBody({
 }
 
 function PropertyStatusForm({ unit }: { unit: ShopDetailUnit }) {
+  const { locale } = useI18n();
   const [state, formAction, pending] = useActionState<UnitEditState, FormData>(updatePropertyStatus, null);
   return (
     <form action={formAction} className="space-y-2 border-t pt-4">
@@ -155,7 +157,7 @@ function PropertyStatusForm({ unit }: { unit: ShopDetailUnit }) {
         >
           {(Object.keys(PROPERTY_STATUS_LABEL) as PropertyStatus[]).map((key) => (
             <option key={key} value={key}>
-              {PROPERTY_STATUS_LABEL[key]}
+              {propertyStatusLabel(key, locale)}
             </option>
           ))}
         </select>
